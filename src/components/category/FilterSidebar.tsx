@@ -41,14 +41,16 @@ const categoryFilters: any = {
 
 interface FilterSidebarProps {
   categorySlug: string;
+  isMobile?: boolean; // Mobil görünüm kontrolü için yeni prop
 }
 
-export default function FilterSidebar({ categorySlug }: FilterSidebarProps) {
+export default function FilterSidebar({ categorySlug, isMobile = false }: FilterSidebarProps) {
   // Gelen slug'a göre filtre setini seç (yoksa default)
   const currentFilters = categoryFilters[categorySlug] || categoryFilters.default;
 
   return (
-    <aside className="w-full md:w-64 flex-shrink-0 hidden md:block space-y-4">
+    // isMobile true ise 'block', değilse 'hidden md:block' sınıfı uygulanır
+    <aside className={`w-full md:w-64 flex-shrink-0 ${isMobile ? 'block' : 'hidden md:block'} space-y-4`}>
       
       {/* Kategori Ağacı */}
       <div className="bg-white border rounded-lg p-4 shadow-sm">
