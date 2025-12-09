@@ -1,10 +1,9 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-// Eğer Header/Footer bileşenleriniz henüz yoksa veya yolları farklıysa bu satırlar hata verebilir.
-// Standart yapıya göre varsayılmıştır. Hata alırsanız bu iki satırı geçici olarak yorum satırı yapın.
-import Header from "@/components/layout/Header"; 
+import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,16 +18,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr">
+    <html lang="tr" suppressHydrationWarning>
       <body className={inter.className}>
-        <div className="flex min-h-screen flex-col">
-           {/* Header bileşeni varsa göster, yoksa hata vermemesi için kontrol edilebilir ama burada direkt koyuyoruz */}
-           <Header /> 
-          <main className="flex-1 container mx-auto px-4 py-6">
-            {children}
-          </main>
-           <Footer />
-        </div>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="flex min-h-screen flex-col bg-background text-foreground transition-colors duration-300">
+              <Header /> 
+              <main className="flex-1 container mx-auto px-4 py-6">
+                {children}
+              </main>
+              <Footer />
+            </div>
+        </ThemeProvider>
       </body>
     </html>
   );
