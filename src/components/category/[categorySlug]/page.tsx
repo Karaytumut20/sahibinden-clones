@@ -1,15 +1,18 @@
-import FilterSidebar from "@/components/category/FilterSidebar"; // Yeni bileşeni import et
+import FilterSidebar from "@/components/category/FilterSidebar";
 import ListingCard from "@/components/listings/ListingCard";
 import { Button } from "@/components/ui/button";
 import { List, Grid, Map } from "lucide-react";
 
-export default function CategoryPage({ params }: { params: { categorySlug: string } }) {
-  const title = params.categorySlug.charAt(0).toUpperCase() + params.categorySlug.slice(1);
+// Next.js 15 için params Promise tipinde olmalı ve fonksiyon async olmalı
+export default async function CategoryPage({ params }: { params: Promise<{ categorySlug: string }> }) {
+  // params'ı await ile çözümlüyoruz
+  const { categorySlug } = await params;
+  const title = categorySlug.charAt(0).toUpperCase() + categorySlug.slice(1);
 
   return (
     <div className="flex flex-col md:flex-row gap-4">
       {/* Sol Filtre Menüsü - categorySlug prop'u eklendi */}
-      <FilterSidebar categorySlug={params.categorySlug} />
+      <FilterSidebar categorySlug={categorySlug} />
 
       {/* Sağ Taraf - Liste */}
       <section className="flex-1">
@@ -41,7 +44,6 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
         </div>
 
         {/* İlan Listesi (Grid) */}
-        {/* Not: Gerçek sahibinden görünümü genelde liste ("List") modundadır ama Grid daha modern durur. */}
         <div className="space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="hidden md:block">
@@ -56,7 +58,7 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
             </div>
           ))}
           
-          {/* Mobil için Grid Görünüm (Mevcut Card yapısı) */}
+          {/* Mobil için Grid Görünüm */}
           <div className="grid grid-cols-2 gap-3 md:hidden">
              {Array.from({ length: 4 }).map((_, i) => (
                 <ListingCard 
@@ -73,7 +75,7 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
   );
 }
 
-// Sadece bu sayfa için basit bir Yatay Liste Bileşeni (Sahibinden Klasik Görünüm)
+// Yardımcı Bileşen
 function ListingRow({ image, title, price, location, date }: any) {
     return (
         <div className="flex bg-white border rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer group h-[120px] overflow-hidden">
