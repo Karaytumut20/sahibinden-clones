@@ -7,11 +7,11 @@ import Link from "next/link";
 
 export default function RegisterForm() {
   return (
-    <Card className="shadow-lg border-gray-200">
+    <Card className="shadow-lg border-gray-200 w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center text-[#3b5062]">Üye Ol</CardTitle>
         <CardDescription className="text-center">
-          Hemen ücretsiz hesap oluşturun
+          Hemen ücretsiz hesap oluşturun ve ilan verin
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -33,7 +33,11 @@ export default function RegisterForm() {
           <label className="text-sm font-medium leading-none">Şifre</label>
           <Input type="password" />
         </div>
-        <Button className="w-full bg-[#3b5062] hover:bg-[#2c3e4e] font-bold">
+        <div className="space-y-2">
+          <label className="text-sm font-medium leading-none">Şifre Tekrar</label>
+          <Input type="password" />
+        </div>
+        <Button className="w-full bg-[#3b5062] hover:bg-[#2c3e4e] font-bold py-2">
           Kayıt Ol
         </Button>
       </CardContent>

@@ -1,5 +1,5 @@
-﻿import CategorySidebar from "@/components/home/CategorySidebar";
-import ListingCard from "@/components/listings/ListingCard";
+﻿import CategorySidebar from "@/src/components/home/CategorySidebar";
+import ListingCard from "@/src/components/listings/ListingCard";
 
 export default function CategoryPage({ params }: { params: { categorySlug: string } }) {
   // Slug'ı başlık formatına çevir (örn: emlak -> Emlak)

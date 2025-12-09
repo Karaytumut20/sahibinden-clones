@@ -1,6 +1,6 @@
-﻿import ListingGallery from "@/components/listing-detail/ListingGallery";
-import ListingInfo from "@/components/listing-detail/ListingInfo";
-import SellerSidebar from "@/components/listing-detail/SellerSidebar";
+﻿import ListingGallery from "@/src/components/listing-detail/ListingGallery";
+import ListingInfo from "@/src/components/listing-detail/ListingInfo";
+import SellerSidebar from "@/src/components/listing-detail/SellerSidebar";
 import { Badge } from "@/components/ui/badge";
 
 export default function ListingDetailPage({ params }: { params: { slug: string } }) {

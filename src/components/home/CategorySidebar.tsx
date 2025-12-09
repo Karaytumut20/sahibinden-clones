@@ -1,19 +1,21 @@
-import Link from "next/link";
-import { Car, Home, ShoppingBag, Briefcase, Wrench, MoreHorizontal } from "lucide-react";
+﻿import Link from "next/link";
+import { Car, Home, ShoppingBag, Briefcase, Wrench, MoreHorizontal, Monitor, Utensils } from "lucide-react";
 
 const categories = [
   { name: "Emlak", icon: Home, count: "1205" },
   { name: "Vasıta", icon: Car, count: "5420" },
-  { name: "Yedek Parça, Aksesuar", icon: Wrench, count: "850" },
-  { name: "İkinci El ve Sıfır Alışveriş", icon: ShoppingBag, count: "12300" },
-  { name: "İş Makineleri & Sanayi", icon: Briefcase, count: "420" },
+  { name: "Yedek Parça", icon: Wrench, count: "850" },
+  { name: "Alışveriş", icon: ShoppingBag, count: "12300" },
+  { name: "İş Makineleri", icon: Briefcase, count: "420" },
+  { name: "Elektronik", icon: Monitor, count: "3500" },
+  { name: "Ev Eşyaları", icon: Utensils, count: "980" },
   { name: "Hizmetler", icon: MoreHorizontal, count: "150" },
 ];
 
 export default function CategorySidebar() {
   return (
-    <aside className="w-full md:w-64 flex-shrink-0">
-      <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
+    <aside className="w-full md:w-64 flex-shrink-0 hidden md:block">
+      <div className="bg-white border rounded-lg shadow-sm overflow-hidden sticky top-24">
         <div className="bg-gray-50 p-3 border-b">
             <h2 className="font-bold text-gray-700 text-sm">Kategoriler</h2>
         </div>
@@ -21,7 +23,7 @@ export default function CategorySidebar() {
           {categories.map((cat) => (
             <li key={cat.name}>
               <Link 
-                href={`/category/${cat.name.toLowerCase()}`}
+                href={'/category/' + cat.name.toLowerCase()}
                 className="flex items-center justify-between p-3 hover:bg-blue-50 hover:text-blue-600 transition-colors group"
               >
                 <div className="flex items-center gap-2 text-sm text-gray-700 group-hover:text-blue-600">
