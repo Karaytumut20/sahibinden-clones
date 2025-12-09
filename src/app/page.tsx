@@ -1,5 +1,5 @@
-﻿import CategorySidebar from "@/src/components/home/CategorySidebar";
-import ListingCard from "@/src/components/listings/ListingCard";
+﻿import CategorySidebar from "@/components/home/CategorySidebar";
+import ListingCard from "@/components/listings/ListingCard";
 
 export default function Home() {
   return (
