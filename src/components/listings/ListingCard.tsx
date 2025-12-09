@@ -20,7 +20,7 @@ export default function ListingCard({
   isVitrin = false
 }: ListingCardProps) {
   return (
-    <Link href="/ilan/ornek-ilan-detayi">
+    <Link href="/ilan/ornek-ilan-slug">
       <Card className="group cursor-pointer overflow-hidden border transition-all hover:shadow-md hover:border-blue-400 h-full flex flex-col">
         <div className="relative h-40 w-full bg-gray-200">
           <div className="absolute inset-0 flex items-center justify-center text-gray-400 select-none">
