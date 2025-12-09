@@ -1,16 +1,19 @@
 ﻿import FilterSidebar from "@/components/category/FilterSidebar";
 import ListingCard from "@/components/listings/ListingCard";
-import Pagination from "@/components/ui/pagination"; // EKLENDİ
+import Pagination from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { List, Grid, Map } from "lucide-react";
 
-export default function CategoryPage({ params }: { params: { categorySlug: string } }) {
-  const title = params.categorySlug.charAt(0).toUpperCase() + params.categorySlug.slice(1);
+// Next.js 15+ için params tipi Promise olmalı
+export default async function CategoryPage({ params }: { params: Promise<{ categorySlug: string }> }) {
+  // params''ı await ile çözümlüyoruz
+  const { categorySlug } = await params;
+  const title = categorySlug.charAt(0).toUpperCase() + categorySlug.slice(1);
 
   return (
     <div className="flex flex-col md:flex-row gap-4">
       {/* Sol Filtre Menüsü */}
-      <FilterSidebar categorySlug={params.categorySlug} />
+      <FilterSidebar categorySlug={categorySlug} />
 
       {/* Sağ Taraf - Liste */}
       <section className="flex-1">
@@ -45,9 +48,8 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
         <div className="space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="hidden md:block">
-                 {/* Masaüstü için Yatay Liste Görünümü */}
                  <ListingRow 
-                    image={"https://placehold.co/200x150/png?text=Araba+" + (i+1)}
+                    image={`https://placehold.co/200x150/png?text=Araba+${i+1}`}
                     title={title + " Kategorisinde Temiz Aile Aracı 2018 Model Hatasız Boyasız"}
                     price={(900 + i * 50) + ".000 TL"}
                     location="İstanbul / Kadıköy"
@@ -56,7 +58,6 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
             </div>
           ))}
           
-          {/* Mobil için Grid Görünüm */}
           <div className="grid grid-cols-2 gap-3 md:hidden">
              {Array.from({ length: 4 }).map((_, i) => (
                 <ListingCard 
@@ -69,16 +70,13 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
           </div>
         </div>
 
-        {/* --- EKLENEN KISIM: Sayfalama --- */}
         <Pagination currentPage={1} totalPages={12} />
-        {/* ------------------------------- */}
 
       </section>
     </div>
   );
 }
 
-// Liste Görünümü Bileşeni
 function ListingRow({ image, title, price, location, date }: any) {
     return (
         <div className="flex bg-white border rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer group h-[120px] overflow-hidden">
