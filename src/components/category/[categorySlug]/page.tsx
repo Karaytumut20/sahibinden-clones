@@ -8,8 +8,8 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
 
   return (
     <div className="flex flex-col md:flex-row gap-4">
-      {/* Sol Filtre Menüsü */}
-      <FilterSidebar />
+      {/* Sol Filtre Menüsü - categorySlug prop'u eklendi */}
+      <FilterSidebar categorySlug={params.categorySlug} />
 
       {/* Sağ Taraf - Liste */}
       <section className="flex-1">
