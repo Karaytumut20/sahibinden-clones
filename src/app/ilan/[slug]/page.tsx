@@ -2,16 +2,10 @@
 import ListingInfo from "@/components/listing-detail/ListingInfo";
 import ListingFeatures from "@/components/listing-detail/ListingFeatures";
 import SellerSidebar from "@/components/listing-detail/SellerSidebar";
-import ListingMap from "@/components/listing-detail/ListingMap"; // Harita
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Eye, Heart, Share2, Flag, MapPin, Info } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Eye, Heart, Share2, Flag, MapPin } from "lucide-react";
 
 export default function ListingDetailPage({ params }: { params: { slug: string } }) {
-  // Örnek koordinat (Kadıköy)
-  const locationCoords: [number, number] = [40.9811, 29.0619];
-
   return (
     <div className="pb-10 container mx-auto px-4 py-6">
       {/* İlan Başlığı ve Navigasyon */}
@@ -43,7 +37,7 @@ export default function ListingDetailPage({ params }: { params: { slug: string }
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Sol Taraf: Galeri ve İçerik */}
+        {/* Sol Taraf: Galeri ve Özellikler */}
         <div className="lg:col-span-9 space-y-8">
             <ListingGallery />
             
@@ -52,17 +46,12 @@ export default function ListingDetailPage({ params }: { params: { slug: string }
                <SellerSidebar />
             </div>
 
-            {/* Sekmeli İçerik Alanı */}
-            <Tabs defaultValue="details" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 lg:w-[400px] mb-6">
-                <TabsTrigger value="details" className="gap-2"><Info size={16}/> İlan Detayları</TabsTrigger>
-                <TabsTrigger value="map" className="gap-2"><MapPin size={16}/> Konum</TabsTrigger>
-              </TabsList>
-              
-              {/* Sekme 1: Detaylar ve Özellikler */}
-              <TabsContent value="details" className="space-y-8 animate-in fade-in-50">
-                <ListingInfo />
+            {/* İlan Açıklaması ve Özellikler */}
+            <div className="space-y-8">
+                <ListingInfo />      
                 <ListingFeatures />
+                
+                {/* Açıklama Alanı */}
                 <div className="bg-white p-6 border rounded-lg shadow-sm">
                     <h3 className="font-bold text-lg text-[#3b5062] mb-4 border-b pb-2">Açıklama</h3>
                     <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
@@ -78,19 +67,7 @@ export default function ListingDetailPage({ params }: { params: { slug: string }
                         Alıcısına şimdiden hayırlı olsun. Cüzi miktarda pazarlık payı vardır.
                     </p>
                 </div>
-              </TabsContent>
-              
-              {/* Sekme 2: Harita */}
-              <TabsContent value="map" className="animate-in fade-in-50">
-                <div className="bg-white p-4 border rounded-lg shadow-sm">
-                    <h3 className="font-bold text-lg text-[#3b5062] mb-4">Konum Bilgisi</h3>
-                    <ListingMap center={locationCoords} />
-                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                        <Info size={14} /> Konum bilgisi tahmini olarak gösterilmiştir.
-                    </p>
-                </div>
-              </TabsContent>
-            </Tabs>
+            </div>
         </div>
 
         {/* Sağ Taraf: Satıcı Bilgisi (Sticky) */}
