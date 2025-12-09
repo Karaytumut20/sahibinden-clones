@@ -5,7 +5,11 @@ import SellerSidebar from "@/components/listing-detail/SellerSidebar";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Heart, Share2, Flag, MapPin } from "lucide-react";
 
-export default function ListingDetailPage({ params }: { params: { slug: string } }) {
+// Next.js 15+ için params Promise olarak tip tanımlaması
+export default async function ListingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  // params''ı await ile çözümlüyoruz
+  const { slug } = await params;
+
   return (
     <div className="pb-10 container mx-auto px-4 py-6">
       {/* İlan Başlığı ve Navigasyon */}
