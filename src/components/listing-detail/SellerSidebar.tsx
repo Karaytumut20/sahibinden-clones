@@ -1,5 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Phone, User, MessageSquare } from "lucide-react";
+﻿import { Button } from "@/components/ui/button";
+import { Phone, User } from "lucide-react";
+import MessageModal from "@/components/modals/MessageModal";
 
 export default function SellerSidebar() {
   return (
@@ -19,10 +20,9 @@ export default function SellerSidebar() {
           <Phone size={16} className="mr-2" />
           0532 555 XX XX
         </Button>
-        <Button variant="outline" className="w-full h-10 border-[#3b5062] text-[#3b5062] hover:bg-blue-50">
-          <MessageSquare size={16} className="mr-2" />
-          Mesaj Gönder
-        </Button>
+        
+        {/* Modal Buraya Eklendi */}
+        <MessageModal />
       </div>
     </div>
   );
