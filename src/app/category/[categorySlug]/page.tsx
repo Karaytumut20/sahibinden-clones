@@ -1,5 +1,6 @@
 ﻿import FilterSidebar from "@/components/category/FilterSidebar";
 import ListingCard from "@/components/listings/ListingCard";
+import Pagination from "@/components/ui/pagination"; // EKLENDİ
 import { Button } from "@/components/ui/button";
 import { List, Grid, Map } from "lucide-react";
 
@@ -8,12 +9,12 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
 
   return (
     <div className="flex flex-col md:flex-row gap-4">
-      {/* Sol Filtre Menüsü - Slug bilgisi gönderiliyor */}
+      {/* Sol Filtre Menüsü */}
       <FilterSidebar categorySlug={params.categorySlug} />
 
       {/* Sağ Taraf - Liste */}
       <section className="flex-1">
-        {/* Üst Bar: Başlık, Sonuç Sayısı ve Sıralama */}
+        {/* Üst Bar */}
         <div className="bg-white p-3 border rounded-t-lg shadow-sm mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-3 mb-3">
                 <div>
@@ -44,7 +45,7 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
         <div className="space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="hidden md:block">
-                 {/* Masaüstü için Yatay Liste Görünümü (Classic View) */}
+                 {/* Masaüstü için Yatay Liste Görünümü */}
                  <ListingRow 
                     image={"https://placehold.co/200x150/png?text=Araba+" + (i+1)}
                     title={title + " Kategorisinde Temiz Aile Aracı 2018 Model Hatasız Boyasız"}
@@ -67,12 +68,17 @@ export default function CategoryPage({ params }: { params: { categorySlug: strin
              ))}
           </div>
         </div>
+
+        {/* --- EKLENEN KISIM: Sayfalama --- */}
+        <Pagination currentPage={1} totalPages={12} />
+        {/* ------------------------------- */}
+
       </section>
     </div>
   );
 }
 
-// Sadece bu sayfa için basit bir Yatay Liste Bileşeni (Sahibinden Klasik Görünüm)
+// Liste Görünümü Bileşeni
 function ListingRow({ image, title, price, location, date }: any) {
     return (
         <div className="flex bg-white border rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer group h-[120px] overflow-hidden">

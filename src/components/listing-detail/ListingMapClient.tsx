@@ -23,7 +23,17 @@ interface MapProps {
 export default function ListingMap({ center, zoom = 13 }: MapProps) {
   return (
     <div className="h-[400px] w-full rounded-lg overflow-hidden border z-0">
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+      {/* CRITICAL FIX: key prop'u eklendi.
+          Bu, React'in haritayı her render'da sıfırdan başlatmasını sağlar 
+          ve "Map container is already initialized" hatasını önler.
+      */}
+      <MapContainer 
+        key={JSON.stringify(center)} 
+        center={center} 
+        zoom={zoom} 
+        scrollWheelZoom={false} 
+        style={{ height: "100%", width: "100%" }}
+      >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
