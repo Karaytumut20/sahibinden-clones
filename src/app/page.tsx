@@ -1,4 +1,4 @@
-﻿import CategorySidebar from "@/components/home/CategorySidebar";
+import CategorySidebar from "@/components/home/CategorySidebar";
 import ListingCard from "@/components/listings/ListingCard";
 
 export default function Home() {

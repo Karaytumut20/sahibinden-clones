@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/";
+// Eğer Header/Footer bileşenleriniz henüz yoksa veya yolları farklıysa bu satırlar hata verebilir.
+// Standart yapıya göre varsayılmıştır. Hata alırsanız bu iki satırı geçici olarak yorum satırı yapın.
+import Header from "@/components/layout/Header"; 
+import Footer from "@/components/layout/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Sahibinden Clone",
-  description: "Türkiye'nin ilan ve alışveriş sitesi",
+  description: "Next.js ile geliştirilmiş klon proje",
 };
 
 export default function RootLayout({
@@ -17,18 +20,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr">
-      <body className={`${inter.className} min-h-screen flex flex-col`}>
-        <Header />
-        
-        {/* Ana İçerik Alanı */}
-        <main className="flex-1 container mx-auto px-4 py-6">
-          {children}
-        </main>
-
-        {/* Geçici Footer */}
-        <footer className="bg-gray-200 py-6 text-center text-sm text-gray-500 mt-auto">
-          <p>© 2025 Sahibinden Clone - Eğitim Amaçlıdır</p>
-        </footer>
+      <body className={inter.className}>
+        <div className="flex min-h-screen flex-col">
+           {/* Header bileşeni varsa göster, yoksa hata vermemesi için kontrol edilebilir ama burada direkt koyuyoruz */}
+           <Header /> 
+          <main className="flex-1 container mx-auto px-4 py-6">
+            {children}
+          </main>
+           <Footer />
+        </div>
       </body>
     </html>
   );

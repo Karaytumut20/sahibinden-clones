@@ -1,2 +1,9 @@
-﻿import LoginForm from '@/src/components/auth/LoginForm';
-export default function LoginPage() { return <LoginForm />; }
+import LoginForm from '@/components/auth/LoginForm';
+
+export default function LoginPage() {
+  return (
+    <div className="container mx-auto px-4 flex justify-center">
+      <LoginForm />
+    </div>
+  );
+}
