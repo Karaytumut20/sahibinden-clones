@@ -4,19 +4,20 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Check, Car, Home, ChevronRight, Upload, DollarSign } from "lucide-react";
+import { Check, Car, Home, ChevronRight, Upload, DollarSign, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { createListing } from "@/actions/listingActions"; // Backend action importu
 
 export default function NewListingWizard() {
   const [step, setStep] = useState(1);
   const [category, setCategory] = useState("");
+  const [loading, setLoading] = useState(false); // Yükleniyor durumu
   const [formData, setFormData] = useState({
     title: "",
     price: "",
     description: "",
   });
 
-  // Adım 1: Kategori Seçimi Verileri
   const categories = [
     { id: "vasita", name: "Vasıta", icon: <Car size={24} /> },
     { id: "emlak", name: "Emlak", icon: <Home size={24} /> },
@@ -27,10 +28,22 @@ export default function NewListingWizard() {
     setStep(2);
   };
 
-  const handlePublish = () => {
-    // Burada normalde API'ye istek atılır (POST request)
-    // Şimdilik sadece başarılı olmuş gibi 3. adıma geçiyoruz
-    setStep(3);
+  const handlePublish = async () => {
+    setLoading(true);
+    
+    // Server Action'ı çağırıyoruz
+    const result = await createListing({
+      ...formData,
+      category: category
+    });
+
+    setLoading(false);
+
+    if (result.success) {
+      setStep(3);
+    } else {
+      alert("Hata: " + result.message);
+    }
   };
 
   return (
@@ -129,7 +142,6 @@ export default function NewListingWizard() {
                 ></textarea>
               </div>
 
-              {/* Sahte Resim Yükleme Alanı */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center text-gray-500 hover:bg-gray-50 cursor-pointer transition-colors group">
                 <div className="p-3 bg-gray-100 rounded-full mb-2 group-hover:bg-white group-hover:shadow-sm">
                     <Upload size={24} className="text-gray-400 group-hover:text-blue-600" />
@@ -143,9 +155,10 @@ export default function NewListingWizard() {
                 <Button 
                     onClick={handlePublish} 
                     className="bg-blue-600 hover:bg-blue-700 px-8"
-                    disabled={!formData.title || !formData.price}
+                    disabled={!formData.title || !formData.price || loading}
                 >
-                    İlanı Yayınla
+                    {loading ? <Loader2 className="animate-spin mr-2" /> : null}
+                    {loading ? "Kaydediliyor..." : "İlanı Yayınla"}
                 </Button>
             </div>
           </div>
@@ -160,15 +173,12 @@ export default function NewListingWizard() {
             <div className="space-y-2">
                 <h2 className="text-2xl font-bold text-gray-800">Tebrikler!</h2>
                 <p className="text-gray-600 max-w-md mx-auto">
-                  İlanınız başarıyla oluşturuldu ve onay sürecine alındı. Editörlerimiz inceledikten sonra yayına girecektir.
+                  İlanınız başarıyla oluşturuldu ve sistemlerimize kaydedildi.
                 </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 mt-4 w-full justify-center">
                 <Link href="/">
                     <Button variant="outline" className="w-full sm:w-auto">Ana Sayfaya Dön</Button>
-                </Link>
-                <Link href="/ilan/ornek-ilan-slug">
-                    <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">İlanı Görüntüle</Button>
                 </Link>
             </div>
           </div>

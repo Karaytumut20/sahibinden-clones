@@ -1,6 +1,5 @@
-import mongoose, { Schema, Document, Model } from "mongoose";
+﻿import mongoose, { Schema, Document, Model } from "mongoose";
 
-// TypeScript için veri tipini tanımlıyoruz (Kod yazarken bize yardımcı olacak)
 export interface IListing extends Document {
   title: string;
   description: string;
@@ -10,23 +9,22 @@ export interface IListing extends Document {
   status: "active" | "pending" | "passive";
   images: string[];
   createdAt: Date;
+  updatedAt: Date;
 }
 
-// MongoDB için şablonumuzu oluşturuyoruz
 const ListingSchema = new Schema<IListing>(
   {
     title: { type: String, required: true },
-    description: { type: String, required: true },
+    description: { type: String, required: false },
     price: { type: Number, required: true },
     currency: { type: String, default: "TL" },
     category: { type: String, required: true },
-    status: { type: String, default: "pending" }, // İlan ilk eklendiğinde "Onay Bekliyor" olsun
-    images: { type: [String], default: [] }, // Resim linklerini tutacağız
+    status: { type: String, default: "active" }, // Test için varsayılan active yapıldı
+    images: { type: [String], default: [] },
   },
-  { timestamps: true } // Bu özellik sayesinde "oluşturulma tarihi" otomatik eklenir
+  { timestamps: true }
 );
 
-// Eğer model daha önce tanımlandıysa onu kullan, yoksa yenisini oluştur (Next.js hatasını önler)
 const Listing: Model<IListing> = mongoose.models.Listing || mongoose.model<IListing>("Listing", ListingSchema);
 
 export default Listing;

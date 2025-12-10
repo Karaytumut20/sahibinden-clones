@@ -3,10 +3,17 @@ import VitrinSlider from "@/components/home/VitrinSlider";
 import ListingCard from "@/components/listings/ListingCard";
 import { Car, Home, ShoppingBag, Briefcase, Wrench, MoreHorizontal, Monitor, Utensils } from "lucide-react";
 import Link from "next/link";
+import connectToDB from "@/lib/db";
+import Listing from "@/models/Listing";
 
-// Fonksiyon adını 'Home' yerine 'HomePage' yaptık
-export default function HomePage() {
+// Bu sayfa artık bir Server Component ve asenkron veri çekiyor
+export default async function HomePage() {
   
+  // MongoDB'den Verileri Çek
+  await connectToDB();
+  // .lean() performansı artırır, sadece veri döner, mongoose objesi dönmez
+  const latestListings = await Listing.find({ status: 'active' }).sort({ createdAt: -1 }).limit(8).lean();
+
   const categories = [
     { name: "Emlak", icon: Home, count: "1205" },
     { name: "Vasıta", icon: Car, count: "5420" },
@@ -51,21 +58,30 @@ export default function HomePage() {
             <VitrinSlider />
         </div>
 
-        {/* Diğer İlanlar (Grid) */}
+        {/* Diğer İlanlar (Grid) - Gerçek Veriler */}
         <div>
             <div className="flex items-center justify-between mb-4 bg-white p-3 rounded shadow-sm border">
-                <h2 className="text-sm font-bold text-gray-700">İlginizi Çekebilecek İlanlar</h2>
+                <h2 className="text-sm font-bold text-gray-700">Son Eklenen İlanlar</h2>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <ListingCard 
-                    key={i}
-                    title={`Fırsat İlanı ${i + 1}`} 
-                    price={`${250 + i * 20}.000 TL`} 
-                    location="İstanbul" 
-                />
-              ))}
-            </div>
+            
+            {latestListings.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {latestListings.map((item: any) => (
+                  <ListingCard 
+                      key={item._id.toString()}
+                      title={item.title} 
+                      price={`${item.price} TL`} 
+                      location="İstanbul" // Lokasyon şimdilik sabit, ileride dinamik yapılacak
+                      // Resim yoksa placeholder göster
+                      image={item.images && item.images.length > 0 ? item.images[0] : "https://placehold.co/300x200?text=Resim+Yok"}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 bg-white border rounded text-gray-500">
+                Henüz hiç ilan eklenmemiş. İlk ilanı sen ekle!
+              </div>
+            )}
         </div>
 
       </section>

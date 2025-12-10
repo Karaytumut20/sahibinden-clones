@@ -1,37 +1,31 @@
-"use server";
+﻿"use server";
 
 import connectToDB from "@/lib/db";
 import Listing from "@/models/Listing";
 import { revalidatePath } from "next/cache";
 
-// Bu fonksiyon sunucuda çalışır, form verisini alır ve veritabanına yazar
 export async function createListing(formData: any) {
   try {
-    // 1. Veritabanı bağlantısını kontrol et / bağlan
     await connectToDB();
 
-    console.log("Veritabanına bağlanıldı, kayıt başlıyor...");
-
-    // 2. Yeni ilanı oluştur
     const newListing = await Listing.create({
       title: formData.title,
-      description: formData.description,
-      price: Number(formData.price), // Fiyatı sayıya çeviriyoruz
+      description: formData.description || "",
+      price: Number(formData.price),
       category: formData.category,
-      currency: formData.currency || "TL",
-      images: [], // Şimdilik resim yok, boş kutu gönderiyoruz
+      currency: "TL",
+      images: [], // Şimdilik boş, resim upload entegrasyonu sonra yapılacak
+      status: "active"
     });
 
-    console.log("İlan kaydedildi:", newListing._id);
+    console.log("İlan başarıyla veritabanına eklendi ID:", newListing._id);
 
-    // 3. Anasayfayı yenile ki yeni ilan hemen görünsün
+    // Anasayfayı ve kategori sayfalarını yenile
     revalidatePath("/");
-
-    // İşlem başarılı mesajı dön
+    
     return { success: true, message: "İlan başarıyla oluşturuldu!" };
-
   } catch (error) {
-    console.error("Hata oluştu:", error);
-    return { success: false, message: "Bir hata oluştu, kayıt yapılamadı." };
+    console.error("İlan oluşturma hatası:", error);
+    return { success: false, message: "Veritabanı hatası oluştu." };
   }
 }
