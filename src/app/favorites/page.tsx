@@ -41,8 +41,8 @@ export default async function FavoritesPage() {
                 key={fav.id}
                 id={fav.listing.id}
                 title={fav.listing.title} 
-                price={\\ \\}
-                location={\\ / \\}
+                price={`${Number(fav.listing.price).toLocaleString('tr-TR')} ${fav.listing.currency}`}
+                location={`${fav.listing.city} / ${fav.listing.district}`}
                 image={fav.listing.images[0]}
             />
           ))}

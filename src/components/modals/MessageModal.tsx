@@ -1,52 +1,68 @@
-﻿import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Send } from "lucide-react";
+﻿'use client';
 
-export default function MessageModal() {
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Send, MessageCircle } from 'lucide-react';
+import { sendMessage } from '@/actions/messageActions';
+
+interface MessageModalProps {
+  receiverId?: string;
+  listingId?: string;
+  listingTitle?: string;
+}
+
+export default function MessageModal({ receiverId, listingId, listingTitle }: MessageModalProps) {
+  const [open, setOpen] = useState(false);
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async () => {
+    if(!receiverId) return alert('Satıcı bilgisi alınamadı.');
+    
+    setLoading(true);
+    const formData = new FormData();
+    formData.append('receiverId', receiverId);
+    if(listingId) formData.append('listingId', listingId);
+    formData.append('content', content);
+
+    const res = await sendMessage(formData);
+    setLoading(false);
+
+    if (res.success) {
+      alert('Mesajınız iletildi!');
+      setOpen(false);
+      setContent('');
+    } else {
+      alert(res.message);
+    }
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full h-10 border-[#3b5062] text-[#3b5062] hover:bg-blue-50 group">
-          <MessageSquare size={16} className="mr-2 group-hover:text-blue-600" />
+        <Button variant="outline" className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 h-10">
+          <MessageCircle size={16} className="mr-2" />
           Mesaj Gönder
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[#3b5062]">
-            <MessageSquare size={20} />
-            Satıcıya Mesaj Gönder
-          </DialogTitle>
-          <DialogDescription>
-            İlan sahibi <strong>Ahmet Yılmaz</strong> kullanıcısına mesajınız iletilecektir.
-          </DialogDescription>
+          <DialogTitle>Satıcıya Mesaj Gönder</DialogTitle>
+          {listingTitle && <p className="text-sm text-gray-500">İlan: {listingTitle}</p>}
         </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <div className="bg-gray-50 p-3 rounded-md text-xs text-gray-500 border">
-            <strong>İpucu:</strong> Telefon numaranızı veya kişisel bilgilerinizi paylaşırken dikkatli olunuz.
-          </div>
+        <div className="space-y-4 py-4">
           <Textarea 
-            placeholder="Merhaba, ilanınızla ilgileniyorum. Takas düşünüyor musunuz?" 
-            className="min-h-[120px] resize-none focus-visible:ring-blue-600"
+            placeholder="Mesajınızı buraya yazın..." 
+            className="min-h-[120px]"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
           />
-        </div>
-
-        <DialogFooter>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
-            <Send size={16} className="mr-2" />
-            Gönder
+          <Button onClick={handleSend} disabled={loading} className="w-full bg-[#3b5062]">
+            {loading ? 'Gönderiliyor...' : <><Send size={16} className="mr-2" /> Gönder</>}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

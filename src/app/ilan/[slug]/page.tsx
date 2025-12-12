@@ -4,21 +4,18 @@ import { Badge } from '@/components/ui/badge';
 import { Eye, Heart, Share2, Flag, MapPin, CheckCircle } from 'lucide-react';
 import { getListingById } from '@/lib/data';
 import { notFound } from 'next/navigation';
+import FavoriteButton from '@/components/listings/FavoriteButton';
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  
   const listing = await getListingById(slug);
 
-  if (!listing) {
-    return notFound();
-  }
+  if (!listing) return notFound();
 
   const dateStr = new Date(listing.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <div className='pb-10 container mx-auto px-4 py-6'>
-      {/* İlan Başlığı ve Navigasyon */}
       <div className='border-b pb-4 mb-6'>
         <div className='flex flex-col md:flex-row justify-between items-start md:items-end gap-4'>
             <div>
@@ -44,10 +41,12 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         </div>
         
         <div className='flex justify-between md:justify-end gap-4 mt-4 text-xs text-gray-500 pt-2 border-t md:border-t-0'>
-            <div className='flex gap-4'>
-                <button className='flex items-center gap-1 hover:text-blue-600 transition-colors'><Heart size={14} /> Favorile</button>
+            <div className='flex gap-4 items-center'>
+                <div className="flex items-center gap-1 hover:text-blue-600 cursor-pointer">
+                    <FavoriteButton listingId={listing.id} className="shadow-none bg-transparent hover:bg-transparent p-0" />
+                    <span>Favorile</span>
+                </div>
                 <button className='flex items-center gap-1 hover:text-blue-600 transition-colors'><Share2 size={14} /> Paylaş</button>
-                <button className='flex items-center gap-1 hover:text-blue-600 transition-colors'><Flag size={14} /> Bildir</button>
             </div>
             <span className='flex items-center gap-1 text-gray-400 md:ml-2'><Eye size={14} /> 125 Görüntüleme</span>
         </div>
@@ -58,7 +57,12 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             <ListingGallery images={listing.images.length > 0 ? listing.images : ['https://placehold.co/800x600/png?text=Resim+Yok']} />
             
             <div className='lg:hidden'>
-               <SellerSidebar sellerName={listing.user?.name || 'Kullanıcı'} />
+               <SellerSidebar 
+                  sellerName={listing.user?.name || 'Kullanıcı'} 
+                  sellerId={listing.userId}
+                  listingId={listing.id}
+                  listingTitle={listing.title}
+               />
             </div>
 
             <div className='bg-white border rounded-lg overflow-hidden'>
@@ -81,8 +85,12 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
         <div className='hidden lg:block lg:col-span-3'>
             <div className='sticky top-24 space-y-6'>
-                <SellerSidebar sellerName={listing.user?.name || 'Kullanıcı'} />
-                
+                <SellerSidebar 
+                    sellerName={listing.user?.name || 'Kullanıcı'} 
+                    sellerId={listing.userId}
+                    listingId={listing.id}
+                    listingTitle={listing.title}
+                />
                 <div className='bg-yellow-50 border border-yellow-200 p-4 rounded text-xs text-yellow-800 flex gap-2'>
                     <CheckCircle size={32} className='text-yellow-600 flex-shrink-0' />
                     <div>
