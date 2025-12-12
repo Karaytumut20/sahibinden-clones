@@ -13,7 +13,6 @@ export default async function FavoritesPage() {
   const user = await db.user.findUnique({ where: { email: session.user.email } });
   if (!user) redirect('/login');
 
-  // Kullanıcının favorilerini ve ilişkili ilanları çek
   const favorites = await db.favorite.findMany({
     where: { userId: user.id },
     include: {
@@ -23,19 +22,19 @@ export default async function FavoritesPage() {
   });
 
   return (
-    <div className='container mx-auto px-4 py-8'>
-      <div className='flex items-center gap-3 mb-6 border-b pb-4'>
-        <div className='p-2 bg-red-100 rounded-full text-red-600'>
-            <Heart size={24} fill='currentColor' />
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center gap-3 mb-6 border-b pb-4">
+        <div className="p-2 bg-red-100 rounded-full text-red-600">
+            <Heart size={24} fill="currentColor" />
         </div>
         <div>
-            <h1 className='text-2xl font-bold text-[#3b5062]'>Favori İlanlarım</h1>
-            <p className='text-sm text-gray-500'>Takip ettiğiniz ilanlar ({favorites.length})</p>
+            <h1 className="text-2xl font-bold text-[#3b5062]">Favori İlanlarım</h1>
+            <p className="text-sm text-gray-500">Takip ettiğiniz ilanlar ({favorites.length})</p>
         </div>
       </div>
 
       {favorites.length > 0 ? (
-        <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {favorites.map((fav) => (
             <ListingCard 
                 key={fav.id}
@@ -48,10 +47,10 @@ export default async function FavoritesPage() {
           ))}
         </div>
       ) : (
-        <div className='text-center py-20 bg-gray-50 rounded-lg border border-dashed'>
-            <h3 className='text-lg font-semibold text-gray-600'>Favori İlanınız Yok</h3>
-            <p className='text-gray-400 mb-4'>Henüz hiç bir ilanı favorilerinize eklemediniz.</p>
-            <Link href='/'>
+        <div className="text-center py-20 bg-gray-50 rounded-lg border border-dashed">
+            <h3 className="text-lg font-semibold text-gray-600">Favori İlanınız Yok</h3>
+            <p className="text-gray-400 mb-4">Henüz hiç bir ilanı favorilerinize eklemediniz.</p>
+            <Link href="/">
                 <Button>İlanlara Göz At</Button>
             </Link>
         </div>

@@ -14,6 +14,7 @@ export async function createListing(formData: any) {
      if (demoUser) {
         userId = demoUser.id;
      } else {
+        // Kullanıcı yoksa oluştur
         try {
             const newUser = await db.user.create({
                 data: {
