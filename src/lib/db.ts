@@ -1,41 +1,15 @@
-﻿import mongoose from "mongoose";
+﻿import { PrismaClient } from '@prisma/client';
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const prismaClientSingleton = () => {
+  return new PrismaClient();
+};
 
-if (!MONGODB_URI) {
-  throw new Error("Lütfen .env.local dosyasına MONGODB_URI ekleyin");
+declare global {
+  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
 }
 
-let cached = (global as any).mongoose;
+const db = globalThis.prisma ?? prismaClientSingleton();
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
-}
+export default db;
 
-async function connectToDB() {
-  if (cached.conn) {
-    return cached.conn;
-  }
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      console.log("MongoDB Bağlantısı Başarılı");
-      return mongoose;
-    });
-  }
-
-  try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    throw e;
-  }
-
-  return cached.conn;
-}
-
-export default connectToDB;
+if (process.env.NODE_ENV !== 'production') globalThis.prisma = db;

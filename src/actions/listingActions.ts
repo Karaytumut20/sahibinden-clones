@@ -1,31 +1,66 @@
-﻿"use server";
+﻿'use server';
 
-import connectToDB from "@/lib/db";
-import Listing from "@/models/Listing";
-import { revalidatePath } from "next/cache";
+import db from '@/lib/db';
+import { auth } from '@/auth';
+import { revalidatePath } from 'next/cache';
 
 export async function createListing(formData: any) {
-  try {
-    await connectToDB();
+  const session = await auth();
+  
+  let userId = session?.user?.id;
+  
+  if (!userId) {
+     const demoUser = await db.user.findFirst();
+     if (demoUser) {
+        userId = demoUser.id;
+     } else {
+        try {
+            const newUser = await db.user.create({
+                data: {
+                    email: 'demo@sahibindenclone.com',
+                    password: 'demo', 
+                    name: 'Demo Kullanıcı',
+                    role: 'INDIVIDUAL'
+                }
+            });
+            userId = newUser.id;
+        } catch (e) {
+            return { success: false, message: 'Kullanıcı oluşturulamadı.' };
+        }
+     }
+  }
 
-    const newListing = await Listing.create({
-      title: formData.title,
-      description: formData.description || "",
-      price: Number(formData.price),
-      category: formData.category,
-      currency: "TL",
-      images: [], // Şimdilik boş, resim upload entegrasyonu sonra yapılacak
-      status: "active"
+  try {
+    const { title, price, description, category, images, currency } = formData;
+
+    const newListing = await db.listing.create({
+      data: {
+        title,
+        description: description || '',
+        price: parseFloat(price),
+        currency: currency || 'TL',
+        category: {
+            connectOrCreate: {
+                where: { slug: category },
+                create: { name: category.charAt(0).toUpperCase() + category.slice(1), slug: category }
+            }
+        },
+        city: 'İstanbul',
+        district: 'Kadıköy',
+        status: 'ACTIVE',
+        images: images || [],
+        user: {
+            connect: { id: userId }
+        }
+      },
     });
 
-    console.log("İlan başarıyla veritabanına eklendi ID:", newListing._id);
-
-    // Anasayfayı ve kategori sayfalarını yenile
-    revalidatePath("/");
+    console.log('✅ İlan veritabanına eklendi:', newListing.id);
+    revalidatePath('/');
+    return { success: true, message: 'İlan başarıyla oluşturuldu!', listingId: newListing.id };
     
-    return { success: true, message: "İlan başarıyla oluşturuldu!" };
-  } catch (error) {
-    console.error("İlan oluşturma hatası:", error);
-    return { success: false, message: "Veritabanı hatası oluştu." };
+  } catch (error: any) {
+    console.error('❌ İlan oluşturma hatası:', error);
+    return { success: false, message: 'Veritabanı hatası: ' + error.message };
   }
 }
