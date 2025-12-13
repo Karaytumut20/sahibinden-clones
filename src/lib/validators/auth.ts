@@ -7,3 +7,9 @@ export const registerSchema = z.object({
   phone: z.string().min(10).max(20).optional().or(z.literal("").transform(() => undefined)),
   password: z.string().min(6, "Şifre en az 6 karakter olmalı."),
 });
+
+// Yeni eklenen Login şeması
+export const loginSchema = z.object({
+  email: z.string().email("Geçerli bir e-posta adresi giriniz."),
+  password: z.string().min(1, "Şifre alanı boş bırakılamaz."),
+});

@@ -15,16 +15,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { signOut } from "next-auth/react";
 
-export default function Header() {
+interface HeaderProps {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
+
+export default function Header({ user }: HeaderProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // Mobilde arama barını açıp kapatmak için state
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false); 
   const { theme, setTheme } = useTheme();
   
-  const [isLoggedIn, setIsLoggedIn] = useState(true); 
+  const isLoggedIn = !!user;
+  
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -35,8 +44,13 @@ export default function Header() {
     e.preventDefault();
     if (query.trim()) {
       router.push(`/search?q=${encodeURIComponent(query)}`);
-      setIsMobileSearchOpen(false); // Aramadan sonra kapat
+      setIsMobileSearchOpen(false);
     }
+  };
+
+  const getInitials = (name?: string | null) => {
+    if (!name) return "U";
+    return name.split(" ").map((n) => n[0]).join("").toUpperCase().substring(0, 2);
   };
 
   return (
@@ -44,12 +58,10 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-10">
           
-          {/* LOGO */}
           <Link href="/" className="text-2xl font-bold tracking-tighter text-[#ffd008] flex-shrink-0 mr-4">
             sahibinden<span className="text-white text-xs opacity-80 font-normal ml-1">clone</span>
           </Link>
 
-          {/* ARAMA ÇUBUĞU (Masaüstü) */}
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xl relative mr-6">
             <input 
               type="text" 
@@ -63,46 +75,34 @@ export default function Header() {
             </button>
           </form>
 
-          {/* SAĞ TARAF (Mobil ve Masaüstü Ortak) */}
           <div className="flex items-center gap-2">
             
-            {/* MOBİL İÇİN: Arama Açma Butonu */}
-            <button 
-              className="md:hidden p-2 text-white hover:text-[#ffd008]"
-              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-            >
+            <button className="md:hidden p-2 text-white hover:text-[#ffd008]" onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}>
               <Search size={22} />
             </button>
 
-            {/* DARK MODE TOGGLE (Artık Mobilde de Görünüyor) */}
             {mounted && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="text-white hover:bg-white/10 hover:text-[#ffd008]"
-                >
+                <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="text-white hover:bg-white/10 hover:text-[#ffd008]">
                   {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
                 </Button>
             )}
 
-            {/* MASAÜSTÜ MENÜ (Gizli kalmaya devam ediyor) */}
             <div className="hidden md:flex items-center gap-3 text-sm font-medium">
               {isLoggedIn ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/10">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-                        <AvatarFallback>AY</AvatarFallback>
+                        <AvatarImage src={user?.image || ""} alt={user?.name || ""} />
+                        <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">Ahmet Yılmaz</p>
-                        <p className="text-xs leading-none text-muted-foreground">ahmet@example.com</p>
+                        <p className="text-sm font-medium leading-none">{user?.name}</p>
+                        <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -110,7 +110,7 @@ export default function Header() {
                     <Link href="/profile/my-listings"><DropdownMenuItem className="cursor-pointer"><PlusCircle className="mr-2 h-4 w-4" /><span>İlanlarım</span></DropdownMenuItem></Link>
                     <Link href="/profile/settings"><DropdownMenuItem className="cursor-pointer"><Settings className="mr-2 h-4 w-4" /><span>Ayarlar</span></DropdownMenuItem></Link>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => setIsLoggedIn(false)}><LogOut className="mr-2 h-4 w-4" /><span>Çıkış Yap</span></DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => signOut()}><LogOut className="mr-2 h-4 w-4" /><span>Çıkış Yap</span></DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
@@ -128,18 +128,13 @@ export default function Header() {
                 </Button>
               </Link>
             </div>
-
-            {/* MOBİL MENÜ BUTONU (Hamburger) */}
-            <button 
-              className="md:hidden text-white hover:text-[#ffd008] ml-1"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
+            
+             <button className="md:hidden text-white hover:text-[#ffd008] ml-1" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
           </div>
         </div>
 
-        {/* MOBİL ARAMA BARI (Toggle ile açılır) */}
         {isMobileSearchOpen && (
            <div className="md:hidden py-3 animate-in slide-in-from-top-5">
              <form onSubmit={handleSearch} className="relative">
@@ -158,7 +153,6 @@ export default function Header() {
            </div>
         )}
 
-        {/* MOBİL MENÜ LİSTESİ */}
         {isMobileMenuOpen && (
           <div className="md:hidden pt-4 pb-4 border-t border-gray-600 mt-2 animate-in slide-in-from-top-2 bg-[#3b5062] dark:bg-[#1e293b]">
             <div className="flex flex-col gap-3 text-sm">
@@ -166,12 +160,12 @@ export default function Header() {
                  <>
                     <div className="flex items-center gap-3 p-3 bg-black/20 rounded-lg mx-2">
                         <Avatar className="h-10 w-10 border-2 border-white/20">
-                            <AvatarImage src="https://github.com/shadcn.png" />
-                            <AvatarFallback>AY</AvatarFallback>
+                            <AvatarImage src={user?.image || ""} />
+                            <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <span className="font-bold block">Ahmet Yılmaz</span>
-                          <span className="text-xs text-gray-300">ahmet@example.com</span>
+                          <span className="font-bold block">{user?.name}</span>
+                          <span className="text-xs text-gray-300">{user?.email}</span>
                         </div>
                     </div>
                     <Link href="/profile" className="flex items-center gap-3 p-3 hover:bg-white/10 rounded-lg mx-2">
@@ -180,7 +174,7 @@ export default function Header() {
                     <Link href="/profile/my-listings" className="flex items-center gap-3 p-3 hover:bg-white/10 rounded-lg mx-2">
                         <PlusCircle size={20} /> İlanlarım
                     </Link>
-                    <button onClick={() => setIsLoggedIn(false)} className="flex items-center gap-3 p-3 hover:bg-white/10 rounded-lg mx-2 text-red-300">
+                    <button onClick={() => signOut()} className="flex items-center gap-3 p-3 hover:bg-white/10 rounded-lg mx-2 text-red-300">
                         <LogOut size={20} /> Çıkış Yap
                     </button>
                  </>

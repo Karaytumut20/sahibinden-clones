@@ -1,10 +1,13 @@
 ﻿'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { Lock, Mail, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
 import { useActionState } from 'react';
 import { authenticate } from '@/actions/authActions';
@@ -12,6 +15,7 @@ import { authenticate } from '@/actions/authActions';
 export default function LoginForm() {
   // useActionState: Form durumunu ve hata mesajlarını yönetir
   const [errorMessage, dispatch] = useActionState(authenticate, undefined);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <Card className='w-full shadow-xl border-t-4 border-t-[#ffd008]'>
@@ -23,8 +27,9 @@ export default function LoginForm() {
       </CardHeader>
       <form action={dispatch}>
         <CardContent className='space-y-4 pt-4'>
+          {/* E-posta Alanı */}
           <div className='space-y-2'>
-            <label className='text-sm font-semibold text-gray-700' htmlFor='email'>E-posta Adresi</label>
+            <Label className='text-sm font-semibold text-gray-700' htmlFor='email'>E-posta Adresi</Label>
             <div className='relative'>
               <Mail className='absolute left-3 top-2.5 h-4 w-4 text-gray-400' />
               <Input 
@@ -37,9 +42,11 @@ export default function LoginForm() {
               />
             </div>
           </div>
+
+          {/* Şifre Alanı */}
           <div className='space-y-2'>
             <div className='flex items-center justify-between'>
-              <label className='text-sm font-semibold text-gray-700' htmlFor='password'>Şifre</label>
+              <Label className='text-sm font-semibold text-gray-700' htmlFor='password'>Şifre</Label>
               <Link href='#' className='text-xs text-blue-600 hover:underline'>Şifremi Unuttum</Link>
             </div>
             <div className='relative'>
@@ -47,15 +54,37 @@ export default function LoginForm() {
               <Input 
                 id='password' 
                 name='password' 
-                type='password' 
-                className='pl-9 focus-visible:ring-[#3b5062]' 
+                type={showPassword ? 'text' : 'password'} 
+                className='pl-9 pr-10 focus-visible:ring-[#3b5062]' 
                 required 
                 minLength={4}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
             </div>
           </div>
+
+          {/* Beni Hatırla */}
+          <div className="flex items-center space-x-2">
+            <Checkbox id="remember" name="remember" />
+            <label
+              htmlFor="remember"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-600"
+            >
+              Beni hatırla
+            </label>
+          </div>
           
-          {/* Hata Mesajı Alanı - Sadece hata varsa görünür */}
+          {/* Hata Mesajı Alanı */}
           {errorMessage && (
             <div className='flex items-center gap-2 p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-200 animate-in fade-in slide-in-from-top-1'>
               <AlertCircle size={16} />
@@ -78,7 +107,7 @@ export default function LoginForm() {
   );
 }
 
-// Buton bileşeni (Loading durumunu dinlemek için ayrı component olmalı)
+// Buton bileşeni
 function LoginButton() {
   const { pending } = useFormStatus();
  
