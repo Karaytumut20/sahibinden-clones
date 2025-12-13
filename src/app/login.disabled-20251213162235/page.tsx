@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const router = useRouter();
   const params = useSearchParams();
+  const router = useRouter();
   const registered = params.get("registered");
 
   const [email, setEmail] = useState("");

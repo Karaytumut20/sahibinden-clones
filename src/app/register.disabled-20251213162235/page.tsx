@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -48,7 +48,6 @@ export default function RegisterPage() {
   return (
     <div className="max-w-md mx-auto p-6">
       <h1 className="text-2xl font-bold mb-2">Kayıt Ol</h1>
-
       <p className="text-sm text-gray-600 mb-6">
         Zaten hesabın var mı?{" "}
         <Link className="text-blue-600 hover:underline" href="/login">
