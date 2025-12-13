@@ -1,79 +1,119 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, MoreVertical, Phone } from "lucide-react";
+import { Send, Phone, MoreVertical, User } from "lucide-react";
+import { sendMessage } from "@/actions/messageActions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-// Mock Mesaj Verisi
-const initialMessages = [
-  { id: 1, text: "Merhaba, ilanınızla ilgileniyorum. Hala satılık mı?", sender: "me", time: "10:00" },
-  { id: 2, text: "Evet, satılık. Buyurun.", sender: "other", time: "10:05" },
-  { id: 3, text: "Fiyatta pazarlık payı var mı?", sender: "me", time: "10:06" },
-  { id: 4, text: "Araç başında cüzi bir miktar olabilir.", sender: "other", time: "10:10" },
-];
+interface Message {
+  id: string;
+  content: string;
+  senderId: string;
+  createdAt: Date;
+}
 
-export default function ChatWindow() {
+interface ChatWindowProps {
+  messages: Message[];
+  currentUserId: string;
+  receiverId: string;
+  receiverName: string;
+}
+
+export default function ChatWindow({ messages: initialMessages, currentUserId, receiverId, receiverName }: ChatWindowProps) {
   const [messages, setMessages] = useState(initialMessages);
   const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = (e: React.FormEvent) => {
+  // Mesaj gelince en alta kaydır
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    const msg = {
-      id: messages.length + 1,
-      text: newMessage,
-      sender: "me",
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    // Optimistic Update (Hemen ekranda göster)
+    const tempMsg = {
+        id: Date.now().toString(),
+        content: newMessage,
+        senderId: currentUserId,
+        createdAt: new Date()
     };
-
-    setMessages([...messages, msg]);
+    setMessages([...messages, tempMsg]);
     setNewMessage("");
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append("content", tempMsg.content);
+    formData.append("receiverId", receiverId);
+
+    await sendMessage(formData);
+    setLoading(false);
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-[#efe7dd] relative"> {/* WhatsApp benzeri arka plan rengi */}
+      
       {/* Üst Bar */}
-      <div className="p-4 bg-white border-b flex justify-between items-center shadow-sm">
+      <div className="p-3 bg-white border-b flex justify-between items-center shadow-sm z-10">
         <div className="flex items-center gap-3">
-            <div className="font-bold text-[#3b5062]">Ahmet Yılmaz</div>
-            <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">• Çevrimiçi</span>
+            <Avatar className="h-10 w-10">
+                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${receiverName}`} />
+                <AvatarFallback>{receiverName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+                <div className="font-bold text-[#3b5062]">{receiverName}</div>
+                <span className="text-xs text-green-600 font-medium">Çevrimiçi</span>
+            </div>
         </div>
-        <div className="flex gap-2 text-gray-500">
-            <button className="p-2 hover:bg-gray-100 rounded-full"><Phone size={18} /></button>
-            <button className="p-2 hover:bg-gray-100 rounded-full"><MoreVertical size={18} /></button>
+        <div className="flex gap-1 text-gray-500">
+            <Button variant="ghost" size="icon"><Phone size={20} /></Button>
+            <Button variant="ghost" size="icon"><MoreVertical size={20} /></Button>
         </div>
       </div>
 
       {/* Mesaj Alanı */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}>
-            <div 
-                className={`max-w-[75%] px-4 py-2 rounded-lg text-sm shadow-sm 
-                ${msg.sender === "me" ? "bg-blue-600 text-white rounded-br-none" : "bg-white text-gray-800 rounded-bl-none border"}`}
-            >
-              <p>{msg.text}</p>
-              <span className={`text-[10px] block text-right mt-1 ${msg.sender === "me" ? "text-blue-100" : "text-gray-400"}`}>
-                {msg.time}
-              </span>
+      <div className="flex-1 overflow-y-auto p-4 space-y-2" ref={scrollRef}>
+        {messages.map((msg) => {
+          const isMe = msg.senderId === currentUserId;
+          return (
+            <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+              <div 
+                  className={`max-w-[75%] px-3 py-2 rounded-lg text-sm shadow-sm relative group
+                  ${isMe ? "bg-[#d9fdd3] text-gray-800 rounded-tr-none" : "bg-white text-gray-800 rounded-tl-none"}`}
+              >
+                <p className="mr-8">{msg.content}</p> {/* Saat için boşluk */}
+                <span className="text-[10px] text-gray-500 absolute bottom-1 right-2 flex items-center gap-1">
+                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Mesaj Yazma Alanı */}
-      <div className="p-4 bg-white border-t">
-        <form onSubmit={handleSend} className="flex gap-2">
+      <div className="p-3 bg-white border-t">
+        <form onSubmit={handleSend} className="flex gap-2 items-center">
           <Input 
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Bir mesaj yazın..." 
-            className="flex-1 focus-visible:ring-blue-600"
+            className="flex-1 bg-gray-100 border-none focus-visible:ring-1 focus-visible:ring-blue-600 rounded-full px-4 h-10"
           />
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-            <Send size={18} />
+          <Button 
+            type="submit" 
+            size="icon"
+            className="bg-[#3b5062] hover:bg-[#2c3e4e] rounded-full h-10 w-10 flex-shrink-0"
+            disabled={loading}
+          >
+            <Send size={18} className={loading ? "opacity-50" : ""} />
           </Button>
         </form>
       </div>

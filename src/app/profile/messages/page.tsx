@@ -1,45 +1,65 @@
-﻿import { getConversations } from '@/actions/messageActions';
-import ChatWindow from '@/components/profile/messages/ChatWindow';
-import { Card } from '@/components/ui/card';
-import { User, MessageSquare } from 'lucide-react';
+﻿import { getConversations, getMessagesWithUser } from "@/actions/messageActions";
+import ChatWindow from "@/components/profile/messages/ChatWindow";
+import ChatList from "@/components/profile/messages/ChatList";
+import { Card } from "@/components/ui/card";
+import { MessageSquare } from "lucide-react";
+import { auth } from "@/auth";
+import db from "@/lib/db";
 
-export default async function MessagesPage() {
+export default async function MessagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}) {
+  const session = await auth();
+  const user = await db.user.findUnique({ where: { email: session?.user?.email || "" } });
+  
+  if (!user) return <div>Lütfen giriş yapın.</div>;
+
+  const params = await searchParams;
+  const activeUserId = params.uid;
+
+  // Tüm konuşmaları çek (Sol liste için)
   const conversations = await getConversations();
 
+  // Eğer bir kişi seçiliyse, onunla olan mesajları çek (Sağ taraf için)
+  let activeMessages = [];
+  let activeReceiverName = "";
+
+  if (activeUserId) {
+    activeMessages = await getMessagesWithUser(activeUserId);
+    const receiver = await db.user.findUnique({ where: { id: activeUserId }, select: { name: true, surname: true } });
+    activeReceiverName = `${receiver?.name || ""} ${receiver?.surname || ""}`.trim() || "Kullanıcı";
+  }
+
   return (
-    <div className='h-[600px] flex flex-col'>
-      <h1 className='text-2xl font-bold text-[#3b5062] mb-6'>Mesajlarım</h1>
+    <div className="h-[calc(100vh-140px)] flex flex-col">
+      <h1 className="text-2xl font-bold text-[#3b5062] mb-4">Mesaj Kutusu</h1>
       
-      <Card className='flex-1 flex overflow-hidden border shadow-sm'>
+      <Card className="flex-1 flex overflow-hidden border shadow-sm h-full">
         {/* Sol Liste */}
-        <div className='w-1/3 border-r bg-gray-50 overflow-y-auto'>
-            {conversations.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 text-sm">
-                    Henüz mesajınız yok.
-                </div>
-            ) : (
-                conversations.map((conv: any) => (
-                    <div key={conv.user.id} className='p-4 border-b hover:bg-white cursor-pointer transition-colors'>
-                        <div className='flex items-center gap-3'>
-                            <div className='w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600'>
-                                <User size={20} />
-                            </div>
-                            <div className='flex-1 min-w-0'>
-                                <h4 className='font-bold text-sm text-gray-800 truncate'>{conv.user.name || 'Kullanıcı'}</h4>
-                                <p className='text-xs text-gray-500 truncate'>{conv.listing?.title || 'İlan hakkında'}</p>
-                                <p className='text-xs text-gray-400 mt-1 truncate'>{conv.lastMessage.content}</p>
-                            </div>
-                        </div>
-                    </div>
-                ))
-            )}
+        <div className={`w-full md:w-80 border-r bg-white flex-shrink-0 ${activeUserId ? "hidden md:flex" : "flex"}`}>
+            <ChatList conversations={conversations} />
         </div>
 
-        {/* Sağ Sohbet Alanı (Seçili kullanıcıya göre doldurulacak - Şimdilik placeholder) */}
-        <div className='flex-1 flex flex-col items-center justify-center bg-white text-gray-400'>
-             <MessageSquare size={48} className="mb-4 opacity-20" />
-             <p>Soldan bir konuşma seçin</p>
-             <p className="text-xs mt-2 text-blue-600">(Not: Tam sohbet penceresi bir sonraki güncellemede)</p>
+        {/* Sağ Sohbet Alanı */}
+        <div className={`flex-1 flex flex-col bg-gray-50 ${!activeUserId ? "hidden md:flex" : "flex"}`}>
+            {activeUserId ? (
+                <ChatWindow 
+                    messages={activeMessages} 
+                    currentUserId={user.id} 
+                    receiverId={activeUserId}
+                    receiverName={activeReceiverName}
+                />
+            ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                     <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <MessageSquare size={48} className="text-gray-300" />
+                     </div>
+                     <p className="text-lg font-medium">Sohbet Başlatın</p>
+                     <p className="text-sm">Mesajlaşmaya başlamak için soldan bir kişi seçin.</p>
+                </div>
+            )}
         </div>
       </Card>
     </div>
