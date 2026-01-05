@@ -1,4 +1,3 @@
-
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
@@ -13,17 +12,16 @@ export const authConfig = {
       if (isOnProfile || isOnNewListing) {
         return isLoggedIn;
       }
-
       if (isOnAdmin) {
         return isLoggedIn && (auth?.user as any)?.role === "ADMIN";
       }
-
       return true;
     },
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as any).id;
         token.role = (user as any).role;
+        token.name = user.name;
       }
       return token;
     },
