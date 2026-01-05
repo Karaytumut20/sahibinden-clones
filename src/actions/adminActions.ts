@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import db from "@/lib/db";
 import { auth } from "@/auth";
@@ -19,6 +19,7 @@ export async function getPendingListings() {
     include: {
       user: { select: { id: true, name: true, surname: true, email: true } },
       category: true,
+      images: true, // DÜZELTME: Resimler artık ilişkisel tablo, include edilmeli.
     },
   });
 }
