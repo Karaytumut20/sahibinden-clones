@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
 
 const colors = {
   green: "\x1b[32m",
@@ -10,14 +9,14 @@ const colors = {
 };
 
 console.log(
-  `${colors.blue}🚀 Sahibinden-Clone Mock DB Onarım Aracı Başlatılıyor...${colors.reset}\n`
+  `${colors.blue}🚀 Sahibinden-Clone TypeScript Düzeltme Aracı Başlatılıyor...${colors.reset}\n`
 );
 
 // ---------------------------------------------------------
-// 1. ADIM: src/lib/db.ts DOSYASINI DÜZELT (TypeScript Hataları İçin)
+// ADIM: src/lib/db.ts DOSYASINI GÜNCELLE (Type Casting Ekleyerek)
 // ---------------------------------------------------------
 console.log(
-  `${colors.yellow}🛠️  src/lib/db.ts dosyası esnek parametrelerle yeniden oluşturuluyor...${colors.reset}`
+  `${colors.yellow}🛠️  src/lib/db.ts dosyasına 'as any' yaması yapılıyor...${colors.reset}`
 );
 
 const mockDbContent = `
@@ -63,8 +62,7 @@ const FAVORITES = [];
 const MESSAGES = [];
 
 // SAHTE VERİTABANI İSTEMCİSİ
-// Not: Fonksiyon parametreleri (args) artık opsiyonel ve 'any' tipinde
-// Bu sayede { where } gönderip { include } göndermediğinizde hata almazsınız.
+// Not: 'as any' kullanımı TypeScript hatalarını susturmak içindir.
 
 const db = {
   user: {
@@ -124,7 +122,8 @@ const db = {
                 category: include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
             }));
         }
-        return res;
+        // TypeScript'in 'Property category does not exist' dememesi için 'as any' kullanıyoruz
+        return res as any;
     },
     findUnique: async (args = {}) => {
         const { where, include } = args;
@@ -137,7 +136,7 @@ const db = {
                 category: include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
             };
         }
-        return l;
+        return l as any;
     },
     create: async ({ data }) => {
         const userId = data.user?.connect?.id || 'user-1';
@@ -195,7 +194,7 @@ const db = {
                 listing: LISTINGS.find(l => l.id === f.listingId)
             }));
         }
-        return res;
+        return res as any;
     },
     create: async ({ data }) => {
         const fav = { id: \`fav-\${Date.now()}\`, userId: data.userId, listingId: data.listingId, createdAt: new Date() };
@@ -220,10 +219,10 @@ const db = {
         let msgs = [...MESSAGES];
 
         if (where?.OR) {
-            // Basit OR mantığı: Sender veya Receiver bu ID ise getir
-            const filterId = where.OR[0]?.senderId || where.OR[1]?.receiverId;
-            if (filterId) {
-                 msgs = msgs.filter(m => m.senderId === filterId || m.receiverId === filterId);
+            const senderId = where.OR[0]?.senderId;
+            const receiverId = where.OR[1]?.receiverId;
+            if (senderId && receiverId) {
+                 msgs = msgs.filter(m => m.senderId === senderId || m.receiverId === receiverId);
             }
         }
 
@@ -235,7 +234,7 @@ const db = {
                 listing: LISTINGS.find(l => l.id === m.listingId)
             }));
         }
-        return msgs.sort((a,b) => a.createdAt.getTime() - b.createdAt.getTime());
+        return msgs.sort((a,b) => a.createdAt.getTime() - b.createdAt.getTime()) as any;
     }
   }
 };
@@ -243,19 +242,18 @@ const db = {
 export default db;
 `;
 
-// src/lib/db.ts dosyasını üzerine yaz
 const dbPath = path.join(__dirname, "src", "lib", "db.ts");
-// Klasör yoksa oluştur
 if (!fs.existsSync(path.join(__dirname, "src", "lib")))
   fs.mkdirSync(path.join(__dirname, "src", "lib"), { recursive: true });
 fs.writeFileSync(dbPath, mockDbContent.trim());
 console.log(
-  `${colors.green}✔ src/lib/db.ts dosyası düzeltildi.${colors.reset}\n`
+  `${colors.green}✔ src/lib/db.ts dosyası başarıyla güncellendi.${colors.reset}\n`
 );
 
 console.log(`${colors.blue}✅ İŞLEM TAMAMLANDI!${colors.reset}`);
-console.log(`Şimdi şu komutları sırasıyla çalıştırın:\n`);
-console.log(`1. node setup.js`);
-console.log(`2. git add src/lib/db.ts`);
-console.log(`3. git commit -m "Fix db params"`);
-console.log(`4. git push origin master`);
+console.log(
+  `Lütfen aşağıdaki komutları sırasıyla çalıştırarak değişiklikleri GitHub'a gönderin:\n`
+);
+console.log(`1. git add src/lib/db.ts`);
+console.log(`2. git commit -m "Fix typescript types for mock db"`);
+console.log(`3. git push origin master`);
