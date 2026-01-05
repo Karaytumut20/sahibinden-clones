@@ -35,9 +35,9 @@ const LISTINGS = [
 ];
 
 // 4. DİĞERLERİ
-const STORES = [];
-const FAVORITES = [];
-const MESSAGES = [];
+const STORES: Store[] = [];
+const FAVORITES: Favorite[] = [];
+const MESSAGES: Message[] = [];
 
 // SAHTE VERİTABANI İSTEMCİSİ
 // Not: 'as any' kullanımı TypeScript hatalarını susturmak içindir.
