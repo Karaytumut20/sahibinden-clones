@@ -1,30 +1,56 @@
 const fs = require("fs");
 const path = require("path");
 
-const authTsPath = path.join(process.cwd(), "src/auth.ts");
+const packageJsonPath = path.join(process.cwd(), "package.json");
 
-if (fs.existsSync(authTsPath)) {
-  let content = fs.readFileSync(authTsPath, "utf8");
+if (fs.existsSync(packageJsonPath)) {
+  try {
+    const packageJsonContent = fs.readFileSync(packageJsonPath, "utf8");
+    const packageJson = JSON.parse(packageJsonContent);
 
-  // Hatalı satır: adapter: PrismaAdapter(db),
-  // Düzeltme: adapter: PrismaAdapter(db) as any,
+    if (packageJson.scripts) {
+      let modified = false;
 
-  // Regex ile bul ve değiştir (Boşluklara ve virgüllere duyarlı)
-  const regex = /adapter:\s*PrismaAdapter\(db\)(,?)/g;
+      // 1. build komutunu güncelle
+      if (
+        packageJson.scripts.build &&
+        !packageJson.scripts.build.includes("prisma generate")
+      ) {
+        const oldBuild = packageJson.scripts.build;
+        packageJson.scripts.build = `prisma generate && ${oldBuild}`;
+        console.log(
+          `✅ 'build' scripti güncellendi: "${oldBuild}" -> "${packageJson.scripts.build}"`
+        );
+        modified = true;
+      } else {
+        // HATA BURADAYDI: Tırnak işaretlerini düzelttik
+        console.log("ℹ️ 'build' scripti zaten güncel veya bulunamadı.");
+      }
 
-  if (regex.test(content)) {
-    content = content.replace(regex, "adapter: PrismaAdapter(db) as any$1");
-    fs.writeFileSync(authTsPath, content, "utf8");
-    console.log(
-      "✅ src/auth.ts düzeltildi: Adapter tip hatası giderildi (as any eklendi)."
-    );
-  } else {
-    console.log(
-      "⚠️ Uyarı: src/auth.ts içinde değiştirilecek adapter satırı bulunamadı veya zaten düzeltilmiş."
+      // 2. postinstall komutu ekle
+      if (!packageJson.scripts.postinstall) {
+        packageJson.scripts.postinstall = "prisma generate";
+        console.log('✅ "postinstall" scripti eklendi: "prisma generate"');
+        modified = true;
+      }
+
+      if (modified) {
+        fs.writeFileSync(
+          packageJsonPath,
+          JSON.stringify(packageJson, null, 4),
+          "utf8"
+        );
+        console.log("🎉 package.json başarıyla kaydedildi.");
+      } else {
+        console.log("✨ Herhangi bir değişiklik gerekmedi.");
+      }
+    }
+  } catch (error) {
+    console.error(
+      "❌ package.json okunurken veya yazılırken hata oluştu:",
+      error
     );
   }
 } else {
-  console.error("❌ Hata: src/auth.ts dosyası bulunamadı.");
+  console.error("❌ package.json dosyası bulunamadı.");
 }
-
-console.log("🎉 İşlem tamamlandı. Tekrar build alabilirsiniz.");
