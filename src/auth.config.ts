@@ -5,21 +5,21 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
+
+      // Sadece profil ve yeni ilan sayfalarını koru
       const isOnProfile = nextUrl.pathname.startsWith("/profile");
       const isOnNewListing = nextUrl.pathname.startsWith("/new-listing");
-      
 
       if (isOnProfile || isOnNewListing) {
         return isLoggedIn;
       }
-      
+
       return true;
     },
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as any).id;
         token.role = (user as any).role;
-        token.name = user.name;
       }
       return token;
     },
