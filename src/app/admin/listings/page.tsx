@@ -24,7 +24,7 @@ export default async function AdminPendingListingsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {pending.map((l) => (
+          {pending.map((l: any) => (
             <div key={l.id} className="p-5 rounded-xl border bg-white shadow-sm space-y-3">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div>
