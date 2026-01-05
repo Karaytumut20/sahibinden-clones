@@ -23,7 +23,7 @@ export async function approveListing(id: string) {
   return { success: true };
 }
 
-export async function rejectListing(id: string) {
+export async function rejectListing(id: string, reason?: string) {
   await checkAdmin();
   await db.listing.update({ where: { id }, data: { status: "REJECTED" } });
   revalidatePath("/admin/listings");
