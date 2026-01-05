@@ -2,9 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
-// Renkli konsol çıktıları
 const colors = {
-  red: "\x1b[31m",
   green: "\x1b[32m",
   yellow: "\x1b[33m",
   blue: "\x1b[34m",
@@ -12,78 +10,14 @@ const colors = {
 };
 
 console.log(
-  `${colors.blue}🚀 Sahibinden-Clone Tam Onarım ve Mock Dönüşüm Aracı Başlatılıyor...${colors.reset}\n`
+  `${colors.blue}🚀 Sahibinden-Clone Mock DB Onarım Aracı Başlatılıyor...${colors.reset}\n`
 );
 
 // ---------------------------------------------------------
-// 1. ADIM: EKSİK .ENV DOSYASINI OLUŞTUR (MissingSecret Hatası İçin)
+// 1. ADIM: src/lib/db.ts DOSYASINI DÜZELT (TypeScript Hataları İçin)
 // ---------------------------------------------------------
 console.log(
-  `${colors.yellow}🔑 .env.local dosyası oluşturuluyor (AUTH_SECRET için)...${colors.reset}`
-);
-const envContent = `
-AUTH_SECRET="buraya-rastgele-ve-guvenli-bir-anahtar-yazildi-123456"
-NEXTAUTH_URL="http://localhost:3000"
-NODE_ENV="development"
-`;
-fs.writeFileSync(path.join(__dirname, ".env.local"), envContent.trim());
-console.log(`${colors.green}✔ .env.local oluşturuldu.${colors.reset}\n`);
-
-// ---------------------------------------------------------
-// 2. ADIM: NEXT CONFIG GÜNCELLEME (SVG Hatası İçin)
-// ---------------------------------------------------------
-console.log(
-  `${colors.yellow}⚙️  next.config.ts güncelleniyor (SVG izinleri için)...${colors.reset}`
-);
-const nextConfigContent = `
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  images: {
-    dangerouslyAllowSVG: true,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-      },
-      {
-        protocol: 'https',
-        hostname: 'via.placeholder.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      }
-    ],
-  },
-};
-
-export default nextConfig;
-`;
-// Eğer ts veya js varsa üzerine yaz
-const configPathTS = path.join(__dirname, "next.config.ts");
-const configPathJS = path.join(__dirname, "next.config.js");
-
-if (fs.existsSync(configPathTS)) {
-  fs.writeFileSync(configPathTS, nextConfigContent.trim());
-} else {
-  fs.writeFileSync(
-    configPathJS,
-    nextConfigContent
-      .replace('import type { NextConfig } from "next";', "")
-      .replace("export default nextConfig;", "module.exports = nextConfig;")
-      .trim()
-  );
-}
-console.log(
-  `${colors.green}✔ next.config dosyası düzeltildi.${colors.reset}\n`
-);
-
-// ---------------------------------------------------------
-// 3. ADIM: MOCK VERİTABANI OLUŞTURMA (src/lib/db.ts)
-// ---------------------------------------------------------
-console.log(
-  `${colors.yellow}mt️  src/lib/db.ts Mock DB ile değiştiriliyor...${colors.reset}`
+  `${colors.yellow}🛠️  src/lib/db.ts dosyası esnek parametrelerle yeniden oluşturuluyor...${colors.reset}`
 );
 
 const mockDbContent = `
@@ -128,11 +62,20 @@ const STORES = [];
 const FAVORITES = [];
 const MESSAGES = [];
 
-// SAHTE VERİTABANI İSTEMCİSİ (Prisma taklidi yapar)
+// SAHTE VERİTABANI İSTEMCİSİ
+// Not: Fonksiyon parametreleri (args) artık opsiyonel ve 'any' tipinde
+// Bu sayede { where } gönderip { include } göndermediğinizde hata almazsınız.
+
 const db = {
   user: {
-    findUnique: async ({ where }) => USERS.find(u => (where.email && u.email === where.email) || (where.id && u.id === where.id)) || null,
-    findFirst: async ({ where }) => USERS.find(u => (where.email && u.email === where.email)) || null,
+    findUnique: async (args = {}) => {
+        const { where } = args;
+        return USERS.find(u => (where?.email && u.email === where.email) || (where?.id && u.id === where.id)) || null;
+    },
+    findFirst: async (args = {}) => {
+        const { where } = args;
+        return USERS.find(u => (where?.email && u.email === where.email)) || null;
+    },
     create: async ({ data }) => {
         const newUser = { ...data, id: \`user-\${Date.now()}\`, createdAt: new Date() };
         USERS.push(newUser);
@@ -145,38 +88,47 @@ const db = {
     },
     count: async () => USERS.length
   },
+
   category: {
     findMany: async () => CATEGORIES,
-    findUnique: async ({ where }) => CATEGORIES.find(c => c.slug === where.slug || c.id === where.id) || null,
+    findUnique: async (args = {}) => {
+        const { where } = args;
+        return CATEGORIES.find(c => c.slug === where?.slug || c.id === where?.id) || null;
+    },
     upsert: async () => null
   },
+
   listing: {
     findMany: async (args = {}) => {
+        const { where, include, orderBy } = args;
         let res = [...LISTINGS];
-        if (args.where) {
-            if (args.where.userId) res = res.filter(l => l.userId === args.where.userId);
-            if (args.where.status) res = res.filter(l => l.status === args.where.status);
-            if (args.where.OR) {
-                const term = args.where.OR[0]?.title?.contains?.toLowerCase();
+
+        if (where) {
+            if (where.userId) res = res.filter(l => l.userId === where.userId);
+            if (where.status) res = res.filter(l => l.status === where.status);
+            if (where.OR) {
+                const term = where.OR[0]?.title?.contains?.toLowerCase();
                 if(term) res = res.filter(l => l.title.toLowerCase().includes(term));
             }
         }
-        if (args.orderBy) {
-            if (args.orderBy.price === 'asc') res.sort((a,b) => a.price - b.price);
-            else if (args.orderBy.price === 'desc') res.sort((a,b) => b.price - a.price);
+
+        if (orderBy) {
+            if (orderBy.price === 'asc') res.sort((a,b) => a.price - b.price);
+            else if (orderBy.price === 'desc') res.sort((a,b) => b.price - a.price);
         }
-        // İlişkileri ekle
-        if (args.include) {
+
+        if (include) {
             res = res.map(l => ({
                 ...l,
-                user: args.include.user ? USERS.find(u => u.id === l.userId) : undefined,
-                category: args.include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
+                user: include.user ? USERS.find(u => u.id === l.userId) : undefined,
+                category: include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
             }));
         }
         return res;
     },
-    findUnique: async ({ where, include }) => {
-        let l = LISTINGS.find(x => x.id === where.id);
+    findUnique: async (args = {}) => {
+        const { where, include } = args;
+        let l = LISTINGS.find(x => x.id === where?.id);
         if (!l) return null;
         if (include) {
             l = {
@@ -223,14 +175,20 @@ const db = {
     },
     count: async () => LISTINGS.length
   },
+
   store: {
     findMany: async () => STORES,
     count: async () => STORES.length
   },
+
   favorite: {
-    findUnique: async ({ where }) => FAVORITES.find(f => f.userId === where.userId_listingId.userId && f.listingId === where.userId_listingId.listingId) || null,
-    findMany: async ({ where, include }) => {
-        let res = FAVORITES.filter(f => f.userId === where.userId);
+    findUnique: async (args = {}) => {
+        const { where } = args;
+        return FAVORITES.find(f => f.userId === where?.userId_listingId?.userId && f.listingId === where?.userId_listingId?.listingId) || null;
+    },
+    findMany: async (args = {}) => {
+        const { where, include } = args;
+        let res = FAVORITES.filter(f => f.userId === where?.userId);
         if (include?.listing) {
             res = res.map(f => ({
                 ...f,
@@ -250,17 +208,25 @@ const db = {
         return { id: where.id };
     }
   },
+
   message: {
     create: async ({ data }) => {
         const msg = { id: \`msg-\${Date.now()}\`, ...data, createdAt: new Date(), isRead: false };
         MESSAGES.push(msg);
         return msg;
     },
-    findMany: async ({ where, include }) => {
+    findMany: async (args = {}) => {
+        const { where, include } = args;
         let msgs = [...MESSAGES];
-        if (where.OR) {
-            msgs = msgs.filter(m => m.senderId === where.OR[0].senderId || m.receiverId === where.OR[0].senderId);
+
+        if (where?.OR) {
+            // Basit OR mantığı: Sender veya Receiver bu ID ise getir
+            const filterId = where.OR[0]?.senderId || where.OR[1]?.receiverId;
+            if (filterId) {
+                 msgs = msgs.filter(m => m.senderId === filterId || m.receiverId === filterId);
+            }
         }
+
         if (include) {
             msgs = msgs.map(m => ({
                 ...m,
@@ -284,99 +250,12 @@ if (!fs.existsSync(path.join(__dirname, "src", "lib")))
   fs.mkdirSync(path.join(__dirname, "src", "lib"), { recursive: true });
 fs.writeFileSync(dbPath, mockDbContent.trim());
 console.log(
-  `${colors.green}✔ src/lib/db.ts dosyası Mock DB ile değiştirildi.${colors.reset}\n`
+  `${colors.green}✔ src/lib/db.ts dosyası düzeltildi.${colors.reset}\n`
 );
-
-// ---------------------------------------------------------
-// 4. ADIM: AUTH.TS DOSYASINI DÜZELTME (Adapter'ı Kaldır)
-// ---------------------------------------------------------
-console.log(
-  `${colors.yellow}🔐 src/auth.ts dosyası PrismaAdapter'dan arındırılıyor...${colors.reset}`
-);
-
-const authContent = `
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { z } from "zod";
-import db from "@/lib/db";
-import { authConfig } from "./auth.config";
-
-const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  ...authConfig,
-  session: { strategy: "jwt" },
-  providers: [
-    Credentials({
-      async authorize(credentials) {
-        const parsed = credentialsSchema.safeParse(credentials);
-        if (!parsed.success) return null;
-        const { email, password } = parsed.data;
-
-        // Mock DB'den kullanıcı bul
-        const user = await db.user.findUnique({ where: { email } });
-        if (!user) return null;
-
-        // Basit şifre kontrolü (Mock veriler için)
-        if (password === user.password || password === 'demo' || password === 'admin') {
-             return {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                surname: user.surname,
-                role: user.role,
-             };
-        }
-        return null;
-      },
-    }),
-  ],
-});
-`;
-
-fs.writeFileSync(path.join(__dirname, "src", "auth.ts"), authContent.trim());
-console.log(
-  `${colors.green}✔ src/auth.ts dosyası düzeltildi.${colors.reset}\n`
-);
-
-// ---------------------------------------------------------
-// 5. ADIM: TEMİZLİK (Prisma Paketleri ve Klasörleri)
-// ---------------------------------------------------------
-try {
-  console.log(
-    `${colors.yellow}📦 Prisma ve gereksiz paketler kaldırılıyor...${colors.reset}`
-  );
-  execSync("npm uninstall prisma @prisma/client @auth/prisma-adapter", {
-    stdio: "inherit",
-  });
-
-  // Package.json postinstall temizliği
-  const pkgPath = path.join(__dirname, "package.json");
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-  if (pkg.scripts && pkg.scripts.postinstall) {
-    delete pkg.scripts.postinstall;
-    fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
-  }
-  console.log(
-    `${colors.green}✔ Paketler ve scriptler temizlendi.${colors.reset}\n`
-  );
-} catch (e) {
-  console.log(
-    `${colors.red}⚠️  Paket kaldırma sırasında uyarı (önemli değil).${colors.reset}`
-  );
-}
-
-// Prisma klasörünü sil
-const prismaDir = path.join(__dirname, "prisma");
-if (fs.existsSync(prismaDir)) {
-  fs.rmSync(prismaDir, { recursive: true, force: true });
-  console.log(`${colors.green}✔ Prisma klasörü silindi.${colors.reset}\n`);
-}
 
 console.log(`${colors.blue}✅ İŞLEM TAMAMLANDI!${colors.reset}`);
-console.log(`Artık proje tamamen frontend modunda çalışmaya hazır.`);
-console.log(`\nTest etmek için:\n> npm run dev\n`);
-console.log(`Giriş Bilgileri:\nEmail: demo@sahibindenclone.com\nŞifre: demo`);
+console.log(`Şimdi şu komutları sırasıyla çalıştırın:\n`);
+console.log(`1. node setup.js`);
+console.log(`2. git add src/lib/db.ts`);
+console.log(`3. git commit -m "Fix db params"`);
+console.log(`4. git push origin master`);
