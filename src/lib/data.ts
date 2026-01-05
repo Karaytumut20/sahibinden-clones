@@ -1,5 +1,6 @@
-import db from '@/lib/db';
-import { Prisma } from '@prisma/client';
+
+import { db } from '@/lib/mock-db';
+import { Listing } from '@/types';
 
 export interface ListingFilter {
   category?: string;
@@ -16,73 +17,59 @@ const ITEMS_PER_PAGE = 12;
 export async function getListings(filters: ListingFilter) {
   const { category, minPrice, maxPrice, query, city, sort, page = 1 } = filters;
 
-  const where: Prisma.ListingWhereInput = {
-    status: 'ACTIVE',
-    ...(query && {
-      OR: [
-        { title: { contains: query } }, // SQLite insensitive default desteklemeyebilir, basit contains
-        { description: { contains: query } },
-      ],
-    }),
-    ...(category && {
-      category: {
-        slug: category
-      }
-    }),
-    ...(city && { city: { contains: city } }),
-    price: {
-      gte: minPrice || 0,
-      lte: maxPrice || 999999999,
-    },
-  };
+  // Mock DB'den çek
+  let allListings = await db.listing.findMany({
+      where: { status: 'ACTIVE' },
+      include: { user: true, category: true }
+  }) as Listing[];
 
-  let orderBy: Prisma.ListingOrderByWithRelationInput = { createdAt: 'desc' };
-  if (sort === 'price_asc') orderBy = { price: 'asc' };
-  if (sort === 'price_desc') orderBy = { price: 'desc' };
-
-  try {
-    const [listings, count] = await Promise.all([
-      db.listing.findMany({
-        where,
-        orderBy,
-        take: ITEMS_PER_PAGE,
-        skip: (page - 1) * ITEMS_PER_PAGE,
-        include: {
-          user: { select: { name: true, surname: true } },
-          category: true,
-          images: true // İlişkisel resimler
-        },
-      }),
-      db.listing.count({ where }),
-    ]);
-
-    return { listings, totalPages: Math.ceil(count / ITEMS_PER_PAGE), totalCount: count };
-  } catch (error) {
-    console.error('Veri çekme hatası:', error);
-    return { listings: [], totalPages: 0, totalCount: 0 };
+  // Filtreleme (In-Memory)
+  if (category) {
+    // Basit slug eşleşmesi (gerçekte recursive kategori gerekir)
+    const cat = await db.category.findUnique({ where: { slug: category } });
+    if(cat) {
+        allListings = allListings.filter(l => l.categoryId === cat.id);
+    }
   }
+
+  if (minPrice) allListings = allListings.filter(l => l.price >= minPrice);
+  if (maxPrice) allListings = allListings.filter(l => l.price <= maxPrice);
+  if (city) allListings = allListings.filter(l => l.city.toLowerCase().includes(city.toLowerCase()));
+  if (query) {
+    const q = query.toLowerCase();
+    allListings = allListings.filter(l => l.title.toLowerCase().includes(q) || l.description.toLowerCase().includes(q));
+  }
+
+  // Sıralama
+  if (sort === 'price_asc') allListings.sort((a, b) => a.price - b.price);
+  else if (sort === 'price_desc') allListings.sort((a, b) => b.price - a.price);
+  else allListings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // Sayfalama
+  const totalCount = allListings.length;
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+  const listings = allListings.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  return { listings, totalPages, totalCount };
 }
 
 export async function getListingById(id: string) {
-  try {
-    const listing = await db.listing.findUnique({
-      where: { id },
-      include: {
-        user: true,
-        category: true,
-        store: true,
-        images: true
-      }
-    });
-    return listing;
-  } catch (error) {
-    return null;
-  }
+  return db.listing.findUnique({
+    where: { id },
+    include: {
+      user: true,
+      category: true,
+      store: true
+    }
+  });
 }
 
 export async function getCategories() {
-  return await db.category.findMany({
-    where: { parentId: null },
-    include: { children: true },
-  });
+  const all = await db.category.findMany();
+  // Sadece ana kategorileri döndür ve çocuklarını ekle (Mock yapısı gereği manuel map)
+  const parents = all.filter((c: any) => c.parentId === null);
+  return parents.map((p: any) => ({
+      ...p,
+      children: all.filter((c: any) => c.parentId === p.id)
+  }));
 }

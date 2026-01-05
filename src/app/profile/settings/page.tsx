@@ -1,5 +1,6 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import db from '@/lib/db';
+import { db } from '@/lib/mock-db';
 import { auth } from '@/auth';
 import ProfileSettingsForm from '@/components/profile/ProfileSettingsForm';
 

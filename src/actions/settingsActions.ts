@@ -1,5 +1,6 @@
+
 'use server';
-import db from '@/lib/db';
+import { db } from '@/lib/mock-db';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 
@@ -17,7 +18,7 @@ export async function updateProfile(prevState: any, formData: FormData) {
             data: { name, surname, phone }
         });
         revalidatePath('/profile/settings');
-        return { success: true, message: 'Profil güncellendi.' };
+        return { success: true, message: 'Profil güncellendi. (Mock)' };
     } catch (e) {
         return { success: false, message: 'Hata oluştu.' };
     }

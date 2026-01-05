@@ -1,9 +1,7 @@
-import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import db from "@/lib/db";
-import { registerSchema } from "@/lib/validators/auth";
 
-export const runtime = "nodejs";
+import { NextResponse } from "next/server";
+import { db } from "@/lib/mock-db";
+import { registerSchema } from "@/lib/validators/auth";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -18,23 +16,22 @@ export async function POST(req: Request) {
 
   const { email, password, name, surname, phone } = parsed.data;
 
+  // Mock kontrol
   const exists = await db.user.findUnique({ where: { email } });
   if (exists) {
     return NextResponse.json({ ok: false, error: "Bu e-posta zaten kayıtlı." }, { status: 409 });
   }
 
-  const hash = await bcrypt.hash(password, 10);
-
+  // Şifre hashleme yok, mock ortamı
   const user = await db.user.create({
     data: {
       email,
-      password: hash,
+      password, // Düz metin sakla (Mock)
       name,
       surname,
       phone: phone || null,
       role: "INDIVIDUAL",
-    },
-    select: { id: true, email: true, name: true, surname: true },
+    }
   });
 
   return NextResponse.json({ ok: true, user }, { status: 201 });

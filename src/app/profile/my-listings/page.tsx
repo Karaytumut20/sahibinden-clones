@@ -1,9 +1,10 @@
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import db from '@/lib/db';
+import { db } from '@/lib/mock-db';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { deleteListing } from '@/actions/userActions';
@@ -17,7 +18,6 @@ export default async function MyListingsPage() {
 
   const listings = await db.listing.findMany({
     where: { userId: user.id },
-    orderBy: { createdAt: 'desc' },
     include: { images: true }
   });
 
@@ -36,7 +36,7 @@ export default async function MyListingsPage() {
                 Henüz hiç ilanınız yok. Hemen satışa başlayın!
             </div>
         ) : (
-            listings.map((item) => (
+            listings.map((item: any) => (
                 <div key={item.id} className="flex flex-col md:flex-row items-center gap-4 p-4 border-b last:border-0 hover:bg-gray-50 transition-colors">
                     <div className="relative w-full md:w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-100">
                         <Image

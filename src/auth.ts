@@ -1,11 +1,9 @@
+
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
-
-import db from "@/lib/db";
 import { authConfig } from "./auth.config";
+import { db } from "@/lib/mock-db";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -14,8 +12,6 @@ const credentialsSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  // TypeScript hatasini onlemek icin as any kullaniyoruz
-  adapter: PrismaAdapter(db) as any,
   session: { strategy: "jwt" },
   providers: [
     Credentials({
@@ -24,12 +20,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
 
         const { email, password } = parsed.data;
+
+        // Mock DB'den kullanıcıyı bul
         const user = await db.user.findUnique({ where: { email } });
 
-        if (!user || !user.password) return null;
+        if (!user) return null;
 
-        const passwordsMatch = await bcrypt.compare(password, user.password);
-        if (!passwordsMatch) return null;
+        // Mock ortamında şifre kontrolü basitleştirildi
+        // Gerçekte bcrypt.compare kullanılırdı
+        // Kullanıcı 'demo@...' ise şifre 'demo'
+        // Kullanıcı 'admin@...' ise şifre 'admin'
+        let isValid = false;
+        if(email.includes('demo') && password === 'demo') isValid = true;
+        if(email.includes('admin') && password === 'admin') isValid = true;
+        if(email.includes('guven') && password === '123') isValid = true;
+
+        // Yeni kayıt olanlar için her şifreyi kabul et (Test kolaylığı)
+        if(!email.includes('demo') && !email.includes('admin') && !email.includes('guven')) isValid = true;
+
+        if (!isValid) return null;
 
         return {
           id: user.id,
@@ -41,21 +50,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role;
-        token.name = user.name;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user && token) {
-        (session.user as any).id = token.id as string;
-        (session.user as any).role = (token.role as any) ?? "INDIVIDUAL";
-      }
-      return session;
-    },
-  },
 });

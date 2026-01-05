@@ -1,6 +1,7 @@
-﻿'use server';
 
-import db from '@/lib/db';
+'use server';
+
+import { db } from '@/lib/mock-db';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 
@@ -10,18 +11,12 @@ export async function toggleFavorite(listingId: string) {
     return { success: false, message: 'Giriş yapmalısınız.' };
   }
 
-  // Session'daki email ile user ID'yi bul (Güvenlik için DB'den çekiyoruz)
   const user = await db.user.findUnique({ where: { email: session.user.email } });
   if (!user) return { success: false, message: 'Kullanıcı bulunamadı.' };
 
   try {
     const existingFav = await db.favorite.findUnique({
-      where: {
-        userId_listingId: {
-          userId: user.id,
-          listingId: listingId
-        }
-      }
+      where: { userId_listingId: { userId: user.id, listingId } }
     });
 
     if (existingFav) {
@@ -30,10 +25,7 @@ export async function toggleFavorite(listingId: string) {
       return { success: true, isFavorited: false, message: 'Favorilerden çıkarıldı.' };
     } else {
       await db.favorite.create({
-        data: {
-          userId: user.id,
-          listingId: listingId
-        }
+        data: { userId: user.id, listingId: listingId }
       });
       revalidatePath('/');
       return { success: true, isFavorited: true, message: 'Favorilere eklendi.' };
@@ -50,8 +42,8 @@ export async function deleteListing(listingId: string) {
   const user = await db.user.findUnique({ where: { email: session.user.email } });
   if (!user) return { success: false };
 
-  // Sadece ilanın sahibi silebilir
   const listing = await db.listing.findUnique({ where: { id: listingId } });
+  // Mock check
   if (!listing || listing.userId !== user.id) {
       return { success: false, message: 'Yetkisiz işlem.' };
   }

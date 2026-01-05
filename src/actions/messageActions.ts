@@ -1,6 +1,7 @@
-﻿'use server';
 
-import db from '@/lib/db';
+'use server';
+
+import { db } from '@/lib/mock-db';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 
@@ -30,7 +31,6 @@ export async function sendMessage(formData: FormData) {
     revalidatePath('/profile/messages');
     return { success: true, message: 'Mesaj gönderildi.' };
   } catch (error) {
-    console.error(error);
     return { success: false, message: 'Mesaj gönderilemedi.' };
   }
 }
@@ -42,25 +42,19 @@ export async function getConversations() {
   const user = await db.user.findUnique({ where: { email: session.user.email } });
   if (!user) return [];
 
-  // Kullanıcının dahil olduğu tüm mesajları çek
   const messages = await db.message.findMany({
     where: {
       OR: [{ senderId: user.id }, { receiverId: user.id }]
     },
-    include: {
-      sender: { select: { id: true, name: true, surname: true } },
-      receiver: { select: { id: true, name: true, surname: true } },
-      listing: { select: { id: true, title: true, images: true } }
-    },
-    orderBy: { createdAt: 'desc' }
+    include: true // Mock DB'de include logic var
   });
 
-  // Mesajları konuşmalara (sohbetlere) göre grupla
-  // Basitlik için: Diğer kullanıcının ID'sine göre grupluyoruz
   const conversations = new Map();
 
   for (const msg of messages) {
     const otherUser = msg.senderId === user.id ? msg.receiver : msg.sender;
+    if(!otherUser) continue;
+
     const key = otherUser.id;
 
     if (!conversations.has(key)) {
@@ -88,7 +82,6 @@ export async function getMessagesWithUser(otherUserId: string) {
         { senderId: user.id, receiverId: otherUserId },
         { senderId: otherUserId, receiverId: user.id }
       ]
-    },
-    orderBy: { createdAt: 'asc' }
+    }
   });
 }

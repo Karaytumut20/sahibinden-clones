@@ -1,10 +1,11 @@
+
 import { getConversations, getMessagesWithUser } from "@/actions/messageActions";
 import ChatWindow from "@/components/profile/messages/ChatWindow";
 import ChatList from "@/components/profile/messages/ChatList";
 import { Card } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
 import { auth } from "@/auth";
-import db from "@/lib/db";
+import { db } from "@/lib/mock-db";
 
 export default async function MessagesPage({
   searchParams,
@@ -25,7 +26,7 @@ export default async function MessagesPage({
   let activeReceiverName = "";
 
   if (activeUserId) {
-    const receiver = await db.user.findUnique({ where: { id: activeUserId }, select: { name: true, surname: true } });
+    const receiver = await db.user.findUnique({ where: { id: activeUserId } });
     activeReceiverName = `${receiver?.name || ""} ${receiver?.surname || ""}`.trim() || "Kullanıcı";
   }
 

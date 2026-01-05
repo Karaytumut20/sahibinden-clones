@@ -1,8 +1,9 @@
+
 import ListingCard from '@/components/listings/ListingCard';
 import { Heart } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import db from '@/lib/db';
+import { db } from '@/lib/mock-db';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 
@@ -16,11 +17,8 @@ export default async function FavoritesPage() {
   const favorites = await db.favorite.findMany({
     where: { userId: user.id },
     include: {
-        listing: {
-          include: { images: true }
-        }
-    },
-    orderBy: { createdAt: 'desc' }
+        listing: true
+    }
   });
 
   return (
@@ -37,15 +35,17 @@ export default async function FavoritesPage() {
 
       {favorites.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {favorites.map((fav) => (
+          {favorites.map((fav: any) => (
+            fav.listing ? (
             <ListingCard
                 key={fav.id}
                 id={fav.listing.id}
                 title={fav.listing.title}
                 price={`${Number(fav.listing.price).toLocaleString('tr-TR')} ${fav.listing.currency}`}
                 location={`${fav.listing.city} / ${fav.listing.district}`}
-                image={fav.listing.images.length > 0 ? fav.listing.images[0].url : null}
+                image={fav.listing.images && fav.listing.images.length > 0 ? fav.listing.images[0].url : null}
             />
+            ) : null
           ))}
         </div>
       ) : (

@@ -1,15 +1,14 @@
-﻿import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, FileText, ShoppingBag, DollarSign } from 'lucide-react';
-import db from '@/lib/db';
+import { db } from '@/lib/mock-db';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 
 export default async function AdminDashboard() {
-  // Basit admin kontrolü (Gerçekte role bakılmalı)
   const session = await auth();
   if (!session) redirect('/login');
 
-  // Paralel veri çekme
   const [userCount, listingCount, storeCount] = await Promise.all([
     db.user.count(),
     db.listing.count(),
@@ -25,7 +24,7 @@ export default async function AdminDashboard() {
 
   return (
     <div className='space-y-6'>
-      <h1 className='text-3xl font-bold tracking-tight text-[#3b5062]'>Admin Paneli</h1>
+      <h1 className='text-3xl font-bold tracking-tight text-[#3b5062]'>Admin Paneli (Mock Data)</h1>
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
         {stats.map((stat, index) => (
           <Card key={index}>
@@ -39,9 +38,9 @@ export default async function AdminDashboard() {
           </Card>
         ))}
       </div>
-      
+
       <div className="p-4 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
-        🚧 İlan yönetimi ve kullanıcı yasaklama ekranları geliştirme aşamasındadır.
+        Bu panel şu anda statik/mock veri ile çalışmaktadır.
       </div>
     </div>
   );
