@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
-// Renkli konsol çıktıları için
+// Renkli konsol çıktıları
 const colors = {
   red: "\x1b[31m",
   green: "\x1b[32m",
@@ -12,169 +12,371 @@ const colors = {
 };
 
 console.log(
-  `${colors.blue}🚀 Sahibinden-Clone Prisma Temizleme Aracı Başlatılıyor...${colors.reset}\n`
+  `${colors.blue}🚀 Sahibinden-Clone Tam Onarım ve Mock Dönüşüm Aracı Başlatılıyor...${colors.reset}\n`
 );
 
-// 1. ADIM: Prisma Paketlerini Kaldır
-try {
-  console.log(
-    `${colors.yellow}📦 Prisma paketleri kaldırılıyor (bu biraz sürebilir)...${colors.reset}`
-  );
-  execSync("npm uninstall prisma @prisma/client", { stdio: "inherit" });
-  console.log(`${colors.green}✔ Paketler kaldırıldı.${colors.reset}\n`);
-} catch (e) {
-  console.log(
-    `${colors.red}❌ Paket kaldırma sırasında hata (belki zaten yüklü değildi). Devam ediliyor...${colors.reset}\n`
+// ---------------------------------------------------------
+// 1. ADIM: EKSİK .ENV DOSYASINI OLUŞTUR (MissingSecret Hatası İçin)
+// ---------------------------------------------------------
+console.log(
+  `${colors.yellow}🔑 .env.local dosyası oluşturuluyor (AUTH_SECRET için)...${colors.reset}`
+);
+const envContent = `
+AUTH_SECRET="buraya-rastgele-ve-guvenli-bir-anahtar-yazildi-123456"
+NEXTAUTH_URL="http://localhost:3000"
+NODE_ENV="development"
+`;
+fs.writeFileSync(path.join(__dirname, ".env.local"), envContent.trim());
+console.log(`${colors.green}✔ .env.local oluşturuldu.${colors.reset}\n`);
+
+// ---------------------------------------------------------
+// 2. ADIM: NEXT CONFIG GÜNCELLEME (SVG Hatası İçin)
+// ---------------------------------------------------------
+console.log(
+  `${colors.yellow}⚙️  next.config.ts güncelleniyor (SVG izinleri için)...${colors.reset}`
+);
+const nextConfigContent = `
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  images: {
+    dangerouslyAllowSVG: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      }
+    ],
+  },
+};
+
+export default nextConfig;
+`;
+// Eğer ts veya js varsa üzerine yaz
+const configPathTS = path.join(__dirname, "next.config.ts");
+const configPathJS = path.join(__dirname, "next.config.js");
+
+if (fs.existsSync(configPathTS)) {
+  fs.writeFileSync(configPathTS, nextConfigContent.trim());
+} else {
+  fs.writeFileSync(
+    configPathJS,
+    nextConfigContent
+      .replace('import type { NextConfig } from "next";', "")
+      .replace("export default nextConfig;", "module.exports = nextConfig;")
+      .trim()
   );
 }
+console.log(
+  `${colors.green}✔ next.config dosyası düzeltildi.${colors.reset}\n`
+);
 
-// 2. ADIM: Prisma Dosyalarını Sil
-const filesToDelete = [
-  "prisma", // Klasör
-  ".env",
-  "lib/prisma.ts",
-  "lib/db.ts",
-  "utils/db.ts",
-  "utils/prisma.ts",
+// ---------------------------------------------------------
+// 3. ADIM: MOCK VERİTABANI OLUŞTURMA (src/lib/db.ts)
+// ---------------------------------------------------------
+console.log(
+  `${colors.yellow}mt️  src/lib/db.ts Mock DB ile değiştiriliyor...${colors.reset}`
+);
+
+const mockDbContent = `
+// BU DOSYA OTOMATİK OLUŞTURULDU - SADECE MOCK DATA İÇERİR
+import { User, Category, Listing, Store, Favorite, Message } from '@/types/db-types';
+
+const NOW = new Date();
+
+// 1. KULLANICILAR
+const USERS = [
+  { id: 'user-1', name: 'Demo', surname: 'Kullanıcı', email: 'demo@sahibindenclone.com', password: 'demo', phone: '05554443322', role: 'INDIVIDUAL', createdAt: NOW },
+  { id: 'user-admin', name: 'Süper', surname: 'Admin', email: 'admin@sahibindenclone.com', password: 'admin', phone: '05000000000', role: 'ADMIN', createdAt: NOW },
 ];
 
-console.log(
-  `${colors.yellow}🗑️  Gereksiz dosyalar taranıyor ve siliniyor...${colors.reset}`
-);
-filesToDelete.forEach((file) => {
-  const fullPath = path.join(__dirname, file);
-  if (fs.existsSync(fullPath)) {
-    fs.rmSync(fullPath, { recursive: true, force: true });
-    console.log(`   - Silindi: ${file}`);
-  }
-});
-console.log(`${colors.green}✔ Dosya temizliği tamamlandı.${colors.reset}\n`);
+// 2. KATEGORİLER
+const CATEGORIES = [
+  { id: 'cat-1', name: 'Emlak', slug: 'emlak', parentId: null },
+  { id: 'cat-1-1', name: 'Konut', slug: 'konut', parentId: 'cat-1' },
+  { id: 'cat-1-2', name: 'İş Yeri', slug: 'is-yeri', parentId: 'cat-1' },
+  { id: 'cat-2', name: 'Vasıta', slug: 'vasita', parentId: null },
+  { id: 'cat-2-1', name: 'Otomobil', slug: 'otomobil', parentId: 'cat-2' },
+  { id: 'cat-2-2', name: 'Motosiklet', slug: 'motosiklet', parentId: 'cat-2' },
+  { id: 'cat-3', name: 'Elektronik', slug: 'elektronik', parentId: null },
+];
 
-// 3. ADIM: package.json Temizliği (postinstall scripti)
-console.log(`${colors.yellow}📝 package.json düzenleniyor...${colors.reset}`);
-const packageJsonPath = path.join(__dirname, "package.json");
-if (fs.existsSync(packageJsonPath)) {
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-
-  if (
-    packageJson.scripts &&
-    packageJson.scripts.postinstall &&
-    packageJson.scripts.postinstall.includes("prisma")
-  ) {
-    delete packageJson.scripts.postinstall;
-    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-    console.log(
-      `${colors.green}✔ "postinstall": "prisma generate" satırı silindi.${colors.reset}\n`
-    );
-  } else {
-    console.log(`${colors.green}✔ package.json zaten temiz.${colors.reset}\n`);
-  }
-}
-
-// 4. ADIM: Sahte Veri (Mock Data) Dosyası Oluşturma
-console.log(
-  `${colors.yellow}🛠️  Veritabanı yerine kullanılacak sahte veriler oluşturuluyor...${colors.reset}`
-);
-const mockDataContent = `
-// BU DOSYA OTOMATİK OLUŞTURULDU
-// Veritabanı yerine bu verileri kullanın.
-
-export const mockIlanlar = [
+// 3. İLANLAR
+const LISTINGS = [
   {
-    id: 1,
-    baslik: "Sahibinden Temiz Aile Aracı",
-    fiyat: 850000,
-    aciklama: "Hatasız boyasız tramersiz.",
-    kategori: "Vasıta",
-    tarih: "2024-01-05",
-    resim: "https://via.placeholder.com/300"
+    id: 'lst-1', title: 'Sahibinden Temiz 2020 Passat', description: 'Hatasız boyasız.', price: 1250000, currency: 'TL',
+    city: 'İstanbul', district: 'Kadıköy', status: 'ACTIVE', userId: 'user-1', categoryId: 'cat-2-1',
+    createdAt: new Date(Date.now() - 86400000), updatedAt: NOW, images: [{ id: 'img-1', url: 'https://placehold.co/600x400?text=Passat', listingId: 'lst-1' }]
   },
   {
-    id: 2,
-    baslik: "Deniz Manzaralı 3+1 Daire",
-    fiyat: 4500000,
-    aciklama: "Merkezi konumda lüks daire.",
-    kategori: "Emlak",
-    tarih: "2024-01-04",
-    resim: "https://via.placeholder.com/300"
-  },
-  {
-    id: 3,
-    baslik: "iPhone 14 Pro Max",
-    fiyat: 65000,
-    aciklama: "Kutulu faturalı garantili.",
-    kategori: "Elektronik",
-    tarih: "2024-01-06",
-    resim: "https://via.placeholder.com/300"
+    id: 'lst-2', title: 'Kadıköy Merkezde 2+1 Daire', description: 'Metrobüse yakın.', price: 25000, currency: 'TL',
+    city: 'İstanbul', district: 'Kadıköy', status: 'ACTIVE', userId: 'user-1', categoryId: 'cat-1-1',
+    createdAt: new Date(Date.now() - 172800000), updatedAt: NOW, images: [{ id: 'img-2', url: 'https://placehold.co/600x400?text=Ev', listingId: 'lst-2' }]
   }
 ];
 
-export const mockUsers = [
-  { id: 1, name: "Ahmet Yılmaz", email: "ahmet@test.com" },
-  { id: 2, name: "Ayşe Demir", email: "ayse@test.com" }
-];
+// 4. DİĞERLERİ
+const STORES = [];
+const FAVORITES = [];
+const MESSAGES = [];
+
+// SAHTE VERİTABANI İSTEMCİSİ (Prisma taklidi yapar)
+const db = {
+  user: {
+    findUnique: async ({ where }) => USERS.find(u => (where.email && u.email === where.email) || (where.id && u.id === where.id)) || null,
+    findFirst: async ({ where }) => USERS.find(u => (where.email && u.email === where.email)) || null,
+    create: async ({ data }) => {
+        const newUser = { ...data, id: \`user-\${Date.now()}\`, createdAt: new Date() };
+        USERS.push(newUser);
+        return newUser;
+    },
+    update: async ({ where, data }) => {
+        const index = USERS.findIndex(u => u.email === where.email || u.id === where.id);
+        if (index > -1) { USERS[index] = { ...USERS[index], ...data }; return USERS[index]; }
+        return null;
+    },
+    count: async () => USERS.length
+  },
+  category: {
+    findMany: async () => CATEGORIES,
+    findUnique: async ({ where }) => CATEGORIES.find(c => c.slug === where.slug || c.id === where.id) || null,
+    upsert: async () => null
+  },
+  listing: {
+    findMany: async (args = {}) => {
+        let res = [...LISTINGS];
+        if (args.where) {
+            if (args.where.userId) res = res.filter(l => l.userId === args.where.userId);
+            if (args.where.status) res = res.filter(l => l.status === args.where.status);
+            if (args.where.OR) {
+                const term = args.where.OR[0]?.title?.contains?.toLowerCase();
+                if(term) res = res.filter(l => l.title.toLowerCase().includes(term));
+            }
+        }
+        if (args.orderBy) {
+            if (args.orderBy.price === 'asc') res.sort((a,b) => a.price - b.price);
+            else if (args.orderBy.price === 'desc') res.sort((a,b) => b.price - a.price);
+        }
+        // İlişkileri ekle
+        if (args.include) {
+            res = res.map(l => ({
+                ...l,
+                user: args.include.user ? USERS.find(u => u.id === l.userId) : undefined,
+                category: args.include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
+            }));
+        }
+        return res;
+    },
+    findUnique: async ({ where, include }) => {
+        let l = LISTINGS.find(x => x.id === where.id);
+        if (!l) return null;
+        if (include) {
+            l = {
+                ...l,
+                user: include.user ? USERS.find(u => u.id === l.userId) : undefined,
+                category: include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
+            };
+        }
+        return l;
+    },
+    create: async ({ data }) => {
+        const userId = data.user?.connect?.id || 'user-1';
+        const categoryId = data.category?.connect?.id || 'cat-1';
+        const newListing = {
+            id: \`lst-\${Date.now()}\`,
+            title: data.title,
+            description: data.description,
+            price: data.price,
+            currency: data.currency,
+            city: data.city,
+            district: data.district,
+            status: data.status || 'PENDING',
+            userId: userId,
+            categoryId: categoryId,
+            images: data.images?.create?.map(img => ({ id: \`img-\${Date.now()}\`, url: img.url })) || [],
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        LISTINGS.unshift(newListing);
+        return newListing;
+    },
+    update: async ({ where, data }) => {
+        const index = LISTINGS.findIndex(l => l.id === where.id);
+        if (index > -1) {
+            LISTINGS[index] = { ...LISTINGS[index], ...data };
+            return LISTINGS[index];
+        }
+        return null;
+    },
+    delete: async ({ where }) => {
+        const index = LISTINGS.findIndex(l => l.id === where.id);
+        if (index > -1) { LISTINGS.splice(index, 1); return { id: where.id }; }
+        throw new Error('Listing not found');
+    },
+    count: async () => LISTINGS.length
+  },
+  store: {
+    findMany: async () => STORES,
+    count: async () => STORES.length
+  },
+  favorite: {
+    findUnique: async ({ where }) => FAVORITES.find(f => f.userId === where.userId_listingId.userId && f.listingId === where.userId_listingId.listingId) || null,
+    findMany: async ({ where, include }) => {
+        let res = FAVORITES.filter(f => f.userId === where.userId);
+        if (include?.listing) {
+            res = res.map(f => ({
+                ...f,
+                listing: LISTINGS.find(l => l.id === f.listingId)
+            }));
+        }
+        return res;
+    },
+    create: async ({ data }) => {
+        const fav = { id: \`fav-\${Date.now()}\`, userId: data.userId, listingId: data.listingId, createdAt: new Date() };
+        FAVORITES.push(fav);
+        return fav;
+    },
+    delete: async ({ where }) => {
+        const idx = FAVORITES.findIndex(f => f.id === where.id);
+        if(idx > -1) FAVORITES.splice(idx, 1);
+        return { id: where.id };
+    }
+  },
+  message: {
+    create: async ({ data }) => {
+        const msg = { id: \`msg-\${Date.now()}\`, ...data, createdAt: new Date(), isRead: false };
+        MESSAGES.push(msg);
+        return msg;
+    },
+    findMany: async ({ where, include }) => {
+        let msgs = [...MESSAGES];
+        if (where.OR) {
+            msgs = msgs.filter(m => m.senderId === where.OR[0].senderId || m.receiverId === where.OR[0].senderId);
+        }
+        if (include) {
+            msgs = msgs.map(m => ({
+                ...m,
+                sender: USERS.find(u => u.id === m.senderId),
+                receiver: USERS.find(u => u.id === m.receiverId),
+                listing: LISTINGS.find(l => l.id === m.listingId)
+            }));
+        }
+        return msgs.sort((a,b) => a.createdAt.getTime() - b.createdAt.getTime());
+    }
+  }
+};
+
+export default db;
 `;
 
-// lib klasörü yoksa oluştur
-if (!fs.existsSync(path.join(__dirname, "lib"))) {
-  fs.mkdirSync(path.join(__dirname, "lib"));
-}
-
-fs.writeFileSync(path.join(__dirname, "lib", "mockData.ts"), mockDataContent);
+// src/lib/db.ts dosyasını üzerine yaz
+const dbPath = path.join(__dirname, "src", "lib", "db.ts");
+// Klasör yoksa oluştur
+if (!fs.existsSync(path.join(__dirname, "src", "lib")))
+  fs.mkdirSync(path.join(__dirname, "src", "lib"), { recursive: true });
+fs.writeFileSync(dbPath, mockDbContent.trim());
 console.log(
-  `${colors.green}✔ 'lib/mockData.ts' dosyası oluşturuldu.${colors.reset}\n`
+  `${colors.green}✔ src/lib/db.ts dosyası Mock DB ile değiştirildi.${colors.reset}\n`
 );
 
-// 5. ADIM: Kod İçinde "prisma" Geçen Yerleri Bulma (Scanner)
+// ---------------------------------------------------------
+// 4. ADIM: AUTH.TS DOSYASINI DÜZELTME (Adapter'ı Kaldır)
+// ---------------------------------------------------------
 console.log(
-  `${colors.blue}🔍 PROJE TARANIYOR: Manuel düzeltmeniz gereken dosyalar bulunuyor...${colors.reset}`
+  `${colors.yellow}🔐 src/auth.ts dosyası PrismaAdapter'dan arındırılıyor...${colors.reset}`
 );
 
-function walkDir(dir, callback) {
-  fs.readdirSync(dir).forEach((f) => {
-    let dirPath = path.join(dir, f);
-    let isDirectory = fs.statSync(dirPath).isDirectory();
-    if (isDirectory && f !== "node_modules" && f !== ".next" && f !== ".git") {
-      walkDir(dirPath, callback);
-    } else {
-      callback(path.join(dir, f));
-    }
-  });
-}
+const authContent = `
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { z } from "zod";
+import db from "@/lib/db";
+import { authConfig } from "./auth.config";
 
-const foundFiles = [];
-walkDir(__dirname, (filePath) => {
-  if (
-    filePath.endsWith(".ts") ||
-    filePath.endsWith(".tsx") ||
-    filePath.endsWith(".js")
-  ) {
-    // Kendi scriptimizi ve mock dosyamızı tarama
-    if (filePath.includes("cleanup.js") || filePath.includes("mockData.ts"))
-      return;
-
-    const content = fs.readFileSync(filePath, "utf8");
-    if (content.includes("prisma") || content.includes("@prisma")) {
-      foundFiles.push(filePath);
-    }
-  }
+const credentialsSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
-if (foundFiles.length > 0) {
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
+  session: { strategy: "jwt" },
+  providers: [
+    Credentials({
+      async authorize(credentials) {
+        const parsed = credentialsSchema.safeParse(credentials);
+        if (!parsed.success) return null;
+        const { email, password } = parsed.data;
+
+        // Mock DB'den kullanıcı bul
+        const user = await db.user.findUnique({ where: { email } });
+        if (!user) return null;
+
+        // Basit şifre kontrolü (Mock veriler için)
+        if (password === user.password || password === 'demo' || password === 'admin') {
+             return {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                surname: user.surname,
+                role: user.role,
+             };
+        }
+        return null;
+      },
+    }),
+  ],
+});
+`;
+
+fs.writeFileSync(path.join(__dirname, "src", "auth.ts"), authContent.trim());
+console.log(
+  `${colors.green}✔ src/auth.ts dosyası düzeltildi.${colors.reset}\n`
+);
+
+// ---------------------------------------------------------
+// 5. ADIM: TEMİZLİK (Prisma Paketleri ve Klasörleri)
+// ---------------------------------------------------------
+try {
   console.log(
-    `${colors.red}⚠️  AŞAĞIDAKİ DOSYALARDA HALA PRISMA KODLARI VAR!${colors.reset}`
+    `${colors.yellow}📦 Prisma ve gereksiz paketler kaldırılıyor...${colors.reset}`
   );
+  execSync("npm uninstall prisma @prisma/client @auth/prisma-adapter", {
+    stdio: "inherit",
+  });
+
+  // Package.json postinstall temizliği
+  const pkgPath = path.join(__dirname, "package.json");
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+  if (pkg.scripts && pkg.scripts.postinstall) {
+    delete pkg.scripts.postinstall;
+    fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
+  }
   console.log(
-    `${colors.red}Bu dosyalara girip 'prisma' kodlarını silip, 'mockIlanlar' verisini kullanmalısınız:${colors.reset}\n`
+    `${colors.green}✔ Paketler ve scriptler temizlendi.${colors.reset}\n`
   );
-  foundFiles.forEach((f) => console.log(`👉 ${path.relative(__dirname, f)}`));
-} else {
+} catch (e) {
   console.log(
-    `${colors.green}🎉 Harika! Kodlarınızda Prisma kalıntısı bulunamadı.${colors.reset}`
+    `${colors.red}⚠️  Paket kaldırma sırasında uyarı (önemli değil).${colors.reset}`
   );
 }
 
-console.log(`\n${colors.blue}✅ İŞLEM TAMAMLANDI.${colors.reset}`);
-console.log(
-  `Lütfen yukarıdaki listede belirtilen dosyaları açın ve veritabanı kodlarını 'lib/mockData.ts' verileriyle değiştirin.`
-);
+// Prisma klasörünü sil
+const prismaDir = path.join(__dirname, "prisma");
+if (fs.existsSync(prismaDir)) {
+  fs.rmSync(prismaDir, { recursive: true, force: true });
+  console.log(`${colors.green}✔ Prisma klasörü silindi.${colors.reset}\n`);
+}
+
+console.log(`${colors.blue}✅ İŞLEM TAMAMLANDI!${colors.reset}`);
+console.log(`Artık proje tamamen frontend modunda çalışmaya hazır.`);
+console.log(`\nTest etmek için:\n> npm run dev\n`);
+console.log(`Giriş Bilgileri:\nEmail: demo@sahibindenclone.com\nŞifre: demo`);

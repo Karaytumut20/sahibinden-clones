@@ -19,11 +19,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
 
+        // Mock DB'den kullanıcı bul
         const user = await db.user.findUnique({ where: { email } });
         if (!user) return null;
 
-        // Mock Password Check (Prod'da bcrypt kullanın, burada mock check)
-        // Demo kullanıcılar: demo/demo, admin/admin
+        // Basit şifre kontrolü (Mock veriler için)
         if (password === user.password || password === 'demo' || password === 'admin') {
              return {
                 id: user.id,
@@ -31,7 +31,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 name: user.name,
                 surname: user.surname,
                 role: user.role,
-             } as any;
+             };
         }
         return null;
       },
