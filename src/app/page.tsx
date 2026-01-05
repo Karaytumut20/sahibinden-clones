@@ -1,22 +1,16 @@
-﻿import CategorySidebar from '@/components/home/CategorySidebar';
+import CategorySidebar from '@/components/home/CategorySidebar';
 import VitrinSlider from '@/components/home/VitrinSlider';
 import ListingCard from '@/components/listings/ListingCard';
 import { getListings } from '@/lib/data';
 import Link from 'next/link';
 
 export default async function HomePage() {
-  // Veritabanından son eklenen 12 ilanı çek
   const { listings } = await getListings({ sort: 'date_desc' });
 
   return (
     <div className='flex flex-col md:flex-row gap-6'>
-      
-      {/* Sol Menü - Artık Dinamik */}
       <CategorySidebar />
-
       <section className='flex-1 overflow-hidden min-w-0'>
-        
-        {/* VİTRİN ALANI */}
         <div className='mb-8'>
             <div className='flex items-center justify-between mb-4 bg-white p-3 rounded shadow-sm border border-l-4 border-l-[#ffd008]'>
                 <h1 className='text-sm font-bold text-gray-700'>Günün Vitrini</h1>
@@ -25,22 +19,22 @@ export default async function HomePage() {
             <VitrinSlider />
         </div>
 
-        {/* SON EKLENENLER (DB'den Gelen Gerçek Veri) */}
         <div>
             <div className='flex items-center justify-between mb-4 bg-white p-3 rounded shadow-sm border'>
                 <h2 className='text-sm font-bold text-gray-700'>Son Eklenen İlanlar</h2>
             </div>
-            
+
             {listings.length > 0 ? (
               <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4'>
                 {listings.map((item: any) => (
-                  <ListingCard 
+                  <ListingCard
                       key={item.id}
                       id={item.id}
-                      title={item.title} 
-                      price={` ${item.price.toLocaleString('tr-TR')} ${item.currency} `} 
+                      title={item.title}
+                      price={` ${Number(item.price).toLocaleString('tr-TR')} ${item.currency} `}
                       location={` ${item.city} / ${item.district} `}
-                      image={item.images && item.images.length > 0 ? item.images[0] : null}
+                      // Resim url erişimi güncellendi
+                      image={item.images && item.images.length > 0 ? item.images[0].url : null}
                   />
                 ))}
               </div>
@@ -51,7 +45,6 @@ export default async function HomePage() {
               </div>
             )}
         </div>
-
       </section>
     </div>
   );

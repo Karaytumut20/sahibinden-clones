@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { updateProfile } from '@/actions/settingsActions';
 
 export default function ProfileSettingsForm({ user }: { user: any }) {
-  // useActionState ile form durumunu ve action sonucunu yönetiyoruz
   const [state, action] = useActionState(updateProfile, null);
 
   return (
@@ -31,7 +30,6 @@ export default function ProfileSettingsForm({ user }: { user: any }) {
             <Input name="phone" defaultValue={user?.phone || ''} placeholder="05XX..." />
         </div>
 
-        {/* Başarı veya Hata Mesajı Gösterimi */}
         {state?.message && (
             <div className={`p-3 rounded text-sm ${state.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                 {state.message}

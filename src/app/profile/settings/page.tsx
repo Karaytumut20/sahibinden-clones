@@ -10,13 +10,11 @@ export default async function SettingsPage() {
   return (
     <div className='max-w-2xl'>
       <h1 className='text-2xl font-bold text-[#3b5062] mb-6'>Hesap Ayarları</h1>
-
       <Card>
         <CardHeader>
             <CardTitle className='text-lg'>Kişisel Bilgiler</CardTitle>
         </CardHeader>
         <CardContent>
-            {/* Form mantığı client component'e taşındı */}
             <ProfileSettingsForm user={user} />
         </CardContent>
       </Card>

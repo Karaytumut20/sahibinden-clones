@@ -1,7 +1,7 @@
-﻿import ListingGallery from '@/components/listing-detail/ListingGallery';
+import ListingGallery from '@/components/listing-detail/ListingGallery';
 import SellerSidebar from '@/components/listing-detail/SellerSidebar';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Heart, Share2, Flag, MapPin, CheckCircle } from 'lucide-react';
+import { Eye, Heart, Share2, MapPin, CheckCircle } from 'lucide-react';
 import { getListingById } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import FavoriteButton from '@/components/listings/FavoriteButton';
@@ -13,6 +13,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   if (!listing) return notFound();
 
   const dateStr = new Date(listing.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // ListingImage objelerini string array'e çeviriyoruz
+  const imageUrls = listing.images.length > 0
+    ? listing.images.map((img: any) => img.url)
+    : ['https://placehold.co/800x600/png?text=Resim+Yok'];
 
   return (
     <div className='pb-10 container mx-auto px-4 py-6'>
@@ -29,7 +34,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                     </span>
                 </div>
             </div>
-            
+
             <div className='flex flex-col items-end gap-1 w-full md:w-auto'>
                 <div className='text-3xl font-bold text-red-600'>
                     {Number(listing.price).toLocaleString('tr-TR')} {listing.currency}
@@ -39,7 +44,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                 </div>
             </div>
         </div>
-        
+
         <div className='flex justify-between md:justify-end gap-4 mt-4 text-xs text-gray-500 pt-2 border-t md:border-t-0'>
             <div className='flex gap-4 items-center'>
                 <div className="flex items-center gap-1 hover:text-blue-600 cursor-pointer">
@@ -54,11 +59,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
       <div className='grid grid-cols-1 lg:grid-cols-12 gap-8'>
         <div className='lg:col-span-9 space-y-8'>
-            <ListingGallery images={listing.images.length > 0 ? listing.images : ['https://placehold.co/800x600/png?text=Resim+Yok']} />
-            
+            <ListingGallery images={imageUrls} />
+
             <div className='lg:hidden'>
-               <SellerSidebar 
-                  sellerName={listing.user?.name || 'Kullanıcı'} 
+               <SellerSidebar
+                  sellerName={listing.user?.name || 'Kullanıcı'}
                   sellerId={listing.userId}
                   listingId={listing.id}
                   listingTitle={listing.title}
@@ -74,7 +79,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                     <div><span className='font-semibold block text-gray-700'>Kimden</span> Sahibinden</div>
                 </div>
             </div>
-                
+
             <div className='bg-white p-6 border rounded-lg shadow-sm'>
                 <h3 className='font-bold text-lg text-[#3b5062] mb-4 border-b pb-2'>Açıklama</h3>
                 <div className='text-gray-700 text-sm leading-relaxed whitespace-pre-line min-h-[100px]'>
@@ -85,8 +90,8 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
         <div className='hidden lg:block lg:col-span-3'>
             <div className='sticky top-24 space-y-6'>
-                <SellerSidebar 
-                    sellerName={listing.user?.name || 'Kullanıcı'} 
+                <SellerSidebar
+                    sellerName={listing.user?.name || 'Kullanıcı'}
                     sellerId={listing.userId}
                     listingId={listing.id}
                     listingTitle={listing.title}

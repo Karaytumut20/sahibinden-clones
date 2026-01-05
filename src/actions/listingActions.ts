@@ -21,7 +21,7 @@ export async function createListing(input: any) {
 
   const category = await db.category.findUnique({ where: { slug: data.category } });
   if (!category) {
-    return { success: false, message: "Kategori bulunamadı. (Seed çalıştırdın mı?)" };
+    return { success: false, message: "Kategori bulunamadı." };
   }
 
   try {
@@ -33,7 +33,10 @@ export async function createListing(input: any) {
         currency: data.currency ?? "TL",
         city: data.city,
         district: data.district,
-        images: data.images,
+        // SQLite: Resimler artık relation olarak ekleniyor
+        images: {
+            create: data.images.map((url: string) => ({ url }))
+        },
         status: "PENDING",
         user: { connect: { id: session.user.id } },
         category: { connect: { id: category.id } },
@@ -54,6 +57,6 @@ export async function getMyListings() {
   return db.listing.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
-    include: { category: true },
+    include: { category: true, images: true },
   });
 }

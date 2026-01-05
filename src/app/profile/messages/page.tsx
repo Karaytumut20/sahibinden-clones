@@ -20,8 +20,6 @@ export default async function MessagesPage({
   const activeUserId = params.uid;
 
   const conversations = await getConversations();
-
-  // DÜZELTME: Değişkeni tek seferde tanımlayıp tip karmaşasını önlüyoruz
   const activeMessages = activeUserId ? await getMessagesWithUser(activeUserId) : [];
 
   let activeReceiverName = "";

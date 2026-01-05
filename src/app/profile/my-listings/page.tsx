@@ -1,6 +1,6 @@
-﻿import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Eye } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import db from '@/lib/db';
@@ -17,7 +17,8 @@ export default async function MyListingsPage() {
 
   const listings = await db.listing.findMany({
     where: { userId: user.id },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    include: { images: true }
   });
 
   return (
@@ -38,11 +39,11 @@ export default async function MyListingsPage() {
             listings.map((item) => (
                 <div key={item.id} className="flex flex-col md:flex-row items-center gap-4 p-4 border-b last:border-0 hover:bg-gray-50 transition-colors">
                     <div className="relative w-full md:w-24 h-16 flex-shrink-0 rounded overflow-hidden bg-gray-100">
-                        <Image 
-                            src={item.images[0] || 'https://placehold.co/100x75?text=No+Image'} 
-                            alt={item.title} 
-                            fill 
-                            className="object-cover" 
+                        <Image
+                            src={item.images[0]?.url || 'https://placehold.co/100x75?text=No+Image'}
+                            alt={item.title}
+                            fill
+                            className="object-cover"
                         />
                     </div>
 

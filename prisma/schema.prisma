@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// SQLite Enum desteklemez, String kullanıyoruz
+// SQLite Enum desteklemez, String ve Default değerler kullanıyoruz
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -103,10 +103,10 @@ model Listing {
   city        String
   district    String
 
-  // SQLite array desteklemediği için ilişki kullanıyoruz
+  // SQLite array desteklemez, ilişki tablosuna geçildi
   images      ListingImage[]
 
-  status      String        @default("PENDING") // PENDING, ACTIVE, etc.
+  status      String        @default("PENDING")
 
   userId      String
   user        User          @relation(fields: [userId], references: [id])
@@ -131,7 +131,7 @@ model Listing {
   @@index([userId])
 }
 
-// Yeni Resim Modeli (SQLite Array Desteklemediği İçin)
+// Yeni Resim Tablosu
 model ListingImage {
   id        String  @id @default(cuid())
   url       String

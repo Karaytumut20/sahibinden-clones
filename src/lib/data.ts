@@ -1,4 +1,4 @@
-﻿import db from '@/lib/db';
+import db from '@/lib/db';
 import { Prisma } from '@prisma/client';
 
 export interface ListingFilter {
@@ -15,29 +15,27 @@ const ITEMS_PER_PAGE = 12;
 
 export async function getListings(filters: ListingFilter) {
   const { category, minPrice, maxPrice, query, city, sort, page = 1 } = filters;
-  
-  // Filtreleme Koşulları
+
   const where: Prisma.ListingWhereInput = {
     status: 'ACTIVE',
     ...(query && {
       OR: [
-        { title: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
+        { title: { contains: query } }, // SQLite insensitive default desteklemeyebilir, basit contains
+        { description: { contains: query } },
       ],
     }),
     ...(category && {
       category: {
-        slug: category // Kategori slug'ına göre filtrele
+        slug: category
       }
     }),
-    ...(city && { city: { contains: city, mode: 'insensitive' } }),
+    ...(city && { city: { contains: city } }),
     price: {
       gte: minPrice || 0,
       lte: maxPrice || 999999999,
     },
   };
 
-  // Sıralama Koşulları
   let orderBy: Prisma.ListingOrderByWithRelationInput = { createdAt: 'desc' };
   if (sort === 'price_asc') orderBy = { price: 'asc' };
   if (sort === 'price_desc') orderBy = { price: 'desc' };
@@ -52,6 +50,7 @@ export async function getListings(filters: ListingFilter) {
         include: {
           user: { select: { name: true, surname: true } },
           category: true,
+          images: true // İlişkisel resimler
         },
       }),
       db.listing.count({ where }),
@@ -72,6 +71,7 @@ export async function getListingById(id: string) {
         user: true,
         category: true,
         store: true,
+        images: true
       }
     });
     return listing;
@@ -81,7 +81,6 @@ export async function getListingById(id: string) {
 }
 
 export async function getCategories() {
-  // Sadece ana kategorileri ve onların alt kategorilerini çek
   return await db.category.findMany({
     where: { parentId: null },
     include: { children: true },
