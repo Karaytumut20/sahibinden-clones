@@ -40,8 +40,7 @@ const FAVORITES = [];
 const MESSAGES = [];
 
 // SAHTE VERİTABANI İSTEMCİSİ
-// Not: Fonksiyon parametreleri (args) artık opsiyonel ve 'any' tipinde
-// Bu sayede { where } gönderip { include } göndermediğinizde hata almazsınız.
+// Not: 'as any' kullanımı TypeScript hatalarını susturmak içindir.
 
 const db = {
   user: {
@@ -101,7 +100,8 @@ const db = {
                 category: include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
             }));
         }
-        return res;
+        // TypeScript'in 'Property category does not exist' dememesi için 'as any' kullanıyoruz
+        return res as any;
     },
     findUnique: async (args = {}) => {
         const { where, include } = args;
@@ -114,7 +114,7 @@ const db = {
                 category: include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
             };
         }
-        return l;
+        return l as any;
     },
     create: async ({ data }) => {
         const userId = data.user?.connect?.id || 'user-1';
@@ -172,7 +172,7 @@ const db = {
                 listing: LISTINGS.find(l => l.id === f.listingId)
             }));
         }
-        return res;
+        return res as any;
     },
     create: async ({ data }) => {
         const fav = { id: `fav-${Date.now()}`, userId: data.userId, listingId: data.listingId, createdAt: new Date() };
@@ -197,10 +197,10 @@ const db = {
         let msgs = [...MESSAGES];
 
         if (where?.OR) {
-            // Basit OR mantığı: Sender veya Receiver bu ID ise getir
-            const filterId = where.OR[0]?.senderId || where.OR[1]?.receiverId;
-            if (filterId) {
-                 msgs = msgs.filter(m => m.senderId === filterId || m.receiverId === filterId);
+            const senderId = where.OR[0]?.senderId;
+            const receiverId = where.OR[1]?.receiverId;
+            if (senderId && receiverId) {
+                 msgs = msgs.filter(m => m.senderId === senderId || m.receiverId === receiverId);
             }
         }
 
@@ -212,7 +212,7 @@ const db = {
                 listing: LISTINGS.find(l => l.id === m.listingId)
             }));
         }
-        return msgs.sort((a,b) => a.createdAt.getTime() - b.createdAt.getTime());
+        return msgs.sort((a,b) => a.createdAt.getTime() - b.createdAt.getTime()) as any;
     }
   }
 };
