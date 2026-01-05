@@ -3,24 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  INDIVIDUAL
-  CORPORATE
-  ADMIN
-}
-
-enum ListingStatus {
-  PENDING
-  ACTIVE
-  PASSIVE
-  REJECTED
-  SOLD
-}
-
+// SQLite Enum desteklemez, String kullanıyoruz
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -30,24 +17,18 @@ model User {
   image         String?
   password      String?
   phone         String?
-  role          UserRole  @default(INDIVIDUAL)
+  role          String    @default("INDIVIDUAL") // INDIVIDUAL, CORPORATE, ADMIN
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // NextAuth (PrismaAdapter)
   accounts      Account[]
   sessions      Session[]
-
-  // Marketplace
   listings      Listing[]
   favorites     Favorite[]
   store         Store?
-
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
-
-  // Moderation
   moderatedListings Listing[] @relation("ModeratedBy")
 }
 
@@ -64,7 +45,6 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
@@ -76,7 +56,6 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -97,10 +76,8 @@ model Store {
   description String?
   logo        String?
   phone       String?
-
   userId      String   @unique
   user        User     @relation(fields: [userId], references: [id])
-
   listings    Listing[]
 
   createdAt   DateTime @default(now())
@@ -111,11 +88,9 @@ model Category {
   id        String     @id @default(cuid())
   name      String
   slug      String     @unique
-
   parentId  String?
   parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children  Category[] @relation("CategoryHierarchy")
-
   listings  Listing[]
 }
 
@@ -123,41 +98,45 @@ model Listing {
   id          String        @id @default(cuid())
   title       String
   description String
-  price       Decimal       @db.Decimal(15, 2)
+  price       Decimal
   currency    String        @default("TL")
-
   city        String
   district    String
-  images      String[]
 
-  status      ListingStatus @default(PENDING)
+  // SQLite array desteklemediği için ilişki kullanıyoruz
+  images      ListingImage[]
+
+  status      String        @default("PENDING") // PENDING, ACTIVE, etc.
 
   userId      String
   user        User          @relation(fields: [userId], references: [id])
-
   storeId     String?
   store       Store?        @relation(fields: [storeId], references: [id])
-
   categoryId  String
   category    Category      @relation(fields: [categoryId], references: [id])
-
   favorites   Favorite[]
   messages    Message[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Moderation fields
   moderatedAt     DateTime?
   moderationNote  String?
   moderatedById   String?
-  moderatedBy     User?     @relation("ModeratedBy", fields: [moderatedById], references: [id])
-
+  moderatedBy     User? @relation("ModeratedBy", fields: [moderatedById], references: [id])
   publishedAt     DateTime?
 
   @@index([status])
   @@index([categoryId])
   @@index([userId])
+}
+
+// Yeni Resim Modeli (SQLite Array Desteklemediği İçin)
+model ListingImage {
+  id        String  @id @default(cuid())
+  url       String
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 }
 
 model Favorite {
@@ -177,16 +156,12 @@ model Favorite {
 model Message {
   id         String   @id @default(cuid())
   content    String
-
   senderId   String
   sender     User     @relation("SentMessages", fields: [senderId], references: [id])
-
   receiverId String
   receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
-
   listingId  String?
   listing    Listing? @relation(fields: [listingId], references: [id])
-
   isRead     Boolean  @default(false)
   createdAt  DateTime @default(now())
 
