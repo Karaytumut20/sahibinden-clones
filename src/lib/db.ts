@@ -3,14 +3,13 @@ import { User, Category, Listing, Store, Favorite, Message } from '@/types/db-ty
 
 const NOW = new Date();
 
-// 1. KULLANICILAR
-const USERS = [
-  { id: 'user-1', name: 'Demo', surname: 'Kullanıcı', email: 'demo@sahibindenclone.com', password: 'demo', phone: '05554443322', role: 'INDIVIDUAL', createdAt: NOW },
-  
+// 1. KULLANICILAR (Admin kaldırıldı)
+const USERS: User[] = [
+  { id: 'user-1', name: 'Demo', surname: 'Kullanıcı', email: 'demo@sahibindenclone.com', password: 'demo', phone: '05554443322', role: 'INDIVIDUAL', createdAt: NOW }
 ];
 
 // 2. KATEGORİLER
-const CATEGORIES = [
+const CATEGORIES: Category[] = [
   { id: 'cat-1', name: 'Emlak', slug: 'emlak', parentId: null },
   { id: 'cat-1-1', name: 'Konut', slug: 'konut', parentId: 'cat-1' },
   { id: 'cat-1-2', name: 'İş Yeri', slug: 'is-yeri', parentId: 'cat-1' },
@@ -21,7 +20,7 @@ const CATEGORIES = [
 ];
 
 // 3. İLANLAR
-const LISTINGS = [
+const LISTINGS: Listing[] = [
   {
     id: 'lst-1', title: 'Sahibinden Temiz 2020 Passat', description: 'Hatasız boyasız.', price: 1250000, currency: 'TL',
     city: 'İstanbul', district: 'Kadıköy', status: 'ACTIVE', userId: 'user-1', categoryId: 'cat-2-1',
@@ -34,30 +33,30 @@ const LISTINGS = [
   }
 ];
 
-// 4. DİĞERLERİ
+// 4. DİĞERLERİ (Tipleri belirtildi)
 const STORES: Store[] = [];
 const FAVORITES: Favorite[] = [];
 const MESSAGES: Message[] = [];
 
 // SAHTE VERİTABANI İSTEMCİSİ
-// Not: 'as any' kullanımı TypeScript hatalarını susturmak içindir.
+// Not: Tüm argümanlara (args: any) diyerek TypeScript hatalarını engelliyoruz.
 
 const db = {
   user: {
-    findUnique: async (args = {}) => {
+    findUnique: async (args: any = {}) => {
         const { where } = args;
         return USERS.find(u => (where?.email && u.email === where.email) || (where?.id && u.id === where.id)) || null;
     },
-    findFirst: async (args = {}) => {
+    findFirst: async (args: any = {}) => {
         const { where } = args;
         return USERS.find(u => (where?.email && u.email === where.email)) || null;
     },
-    create: async ({ data }) => {
+    create: async ({ data }: any) => {
         const newUser = { ...data, id: `user-${Date.now()}`, createdAt: new Date() };
         USERS.push(newUser);
         return newUser;
     },
-    update: async ({ where, data }) => {
+    update: async ({ where, data }: any) => {
         const index = USERS.findIndex(u => u.email === where.email || u.id === where.id);
         if (index > -1) { USERS[index] = { ...USERS[index], ...data }; return USERS[index]; }
         return null;
@@ -67,7 +66,7 @@ const db = {
 
   category: {
     findMany: async () => CATEGORIES,
-    findUnique: async (args = {}) => {
+    findUnique: async (args: any = {}) => {
         const { where } = args;
         return CATEGORIES.find(c => c.slug === where?.slug || c.id === where?.id) || null;
     },
@@ -75,7 +74,7 @@ const db = {
   },
 
   listing: {
-    findMany: async (args = {}) => {
+    findMany: async (args: any = {}) => {
         const { where, include, orderBy } = args;
         let res = [...LISTINGS];
 
@@ -100,10 +99,9 @@ const db = {
                 category: include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
             }));
         }
-        // TypeScript'in 'Property category does not exist' dememesi için 'as any' kullanıyoruz
         return res as any;
     },
-    findUnique: async (args = {}) => {
+    findUnique: async (args: any = {}) => {
         const { where, include } = args;
         let l = LISTINGS.find(x => x.id === where?.id);
         if (!l) return null;
@@ -116,7 +114,7 @@ const db = {
         }
         return l as any;
     },
-    create: async ({ data }) => {
+    create: async ({ data }: any) => {
         const userId = data.user?.connect?.id || 'user-1';
         const categoryId = data.category?.connect?.id || 'cat-1';
         const newListing = {
@@ -130,14 +128,14 @@ const db = {
             status: data.status || 'PENDING',
             userId: userId,
             categoryId: categoryId,
-            images: data.images?.create?.map(img => ({ id: `img-${Date.now()}`, url: img.url })) || [],
+            images: data.images?.create?.map((img: any) => ({ id: `img-${Date.now()}`, url: img.url })) || [],
             createdAt: new Date(),
             updatedAt: new Date()
         };
         LISTINGS.unshift(newListing);
         return newListing;
     },
-    update: async ({ where, data }) => {
+    update: async ({ where, data }: any) => {
         const index = LISTINGS.findIndex(l => l.id === where.id);
         if (index > -1) {
             LISTINGS[index] = { ...LISTINGS[index], ...data };
@@ -145,7 +143,7 @@ const db = {
         }
         return null;
     },
-    delete: async ({ where }) => {
+    delete: async ({ where }: any) => {
         const index = LISTINGS.findIndex(l => l.id === where.id);
         if (index > -1) { LISTINGS.splice(index, 1); return { id: where.id }; }
         throw new Error('Listing not found');
@@ -159,11 +157,11 @@ const db = {
   },
 
   favorite: {
-    findUnique: async (args = {}) => {
+    findUnique: async (args: any = {}) => {
         const { where } = args;
         return FAVORITES.find(f => f.userId === where?.userId_listingId?.userId && f.listingId === where?.userId_listingId?.listingId) || null;
     },
-    findMany: async (args = {}) => {
+    findMany: async (args: any = {}) => {
         const { where, include } = args;
         let res = FAVORITES.filter(f => f.userId === where?.userId);
         if (include?.listing) {
@@ -174,12 +172,12 @@ const db = {
         }
         return res as any;
     },
-    create: async ({ data }) => {
+    create: async ({ data }: any) => {
         const fav = { id: `fav-${Date.now()}`, userId: data.userId, listingId: data.listingId, createdAt: new Date() };
         FAVORITES.push(fav);
         return fav;
     },
-    delete: async ({ where }) => {
+    delete: async ({ where }: any) => {
         const idx = FAVORITES.findIndex(f => f.id === where.id);
         if(idx > -1) FAVORITES.splice(idx, 1);
         return { id: where.id };
@@ -187,12 +185,12 @@ const db = {
   },
 
   message: {
-    create: async ({ data }) => {
+    create: async ({ data }: any) => {
         const msg = { id: `msg-${Date.now()}`, ...data, createdAt: new Date(), isRead: false };
         MESSAGES.push(msg);
         return msg;
     },
-    findMany: async (args = {}) => {
+    findMany: async (args: any = {}) => {
         const { where, include } = args;
         let msgs = [...MESSAGES];
 
