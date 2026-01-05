@@ -1,9 +1,10 @@
-﻿'use server';
+'use server';
 import db from '@/lib/db';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 
-export async function updateProfile(formData: FormData) {
+// prevState parametresi eklendi
+export async function updateProfile(prevState: any, formData: FormData) {
     const session = await auth();
     if (!session?.user?.email) return { success: false, message: 'Oturum açın.' };
 
