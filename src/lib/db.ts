@@ -39,11 +39,20 @@ const STORES = [];
 const FAVORITES = [];
 const MESSAGES = [];
 
-// SAHTE VERİTABANI İSTEMCİSİ (Prisma taklidi yapar)
+// SAHTE VERİTABANI İSTEMCİSİ
+// Not: Fonksiyon parametreleri (args) artık opsiyonel ve 'any' tipinde
+// Bu sayede { where } gönderip { include } göndermediğinizde hata almazsınız.
+
 const db = {
   user: {
-    findUnique: async ({ where }) => USERS.find(u => (where.email && u.email === where.email) || (where.id && u.id === where.id)) || null,
-    findFirst: async ({ where }) => USERS.find(u => (where.email && u.email === where.email)) || null,
+    findUnique: async (args = {}) => {
+        const { where } = args;
+        return USERS.find(u => (where?.email && u.email === where.email) || (where?.id && u.id === where.id)) || null;
+    },
+    findFirst: async (args = {}) => {
+        const { where } = args;
+        return USERS.find(u => (where?.email && u.email === where.email)) || null;
+    },
     create: async ({ data }) => {
         const newUser = { ...data, id: `user-${Date.now()}`, createdAt: new Date() };
         USERS.push(newUser);
@@ -56,38 +65,47 @@ const db = {
     },
     count: async () => USERS.length
   },
+
   category: {
     findMany: async () => CATEGORIES,
-    findUnique: async ({ where }) => CATEGORIES.find(c => c.slug === where.slug || c.id === where.id) || null,
+    findUnique: async (args = {}) => {
+        const { where } = args;
+        return CATEGORIES.find(c => c.slug === where?.slug || c.id === where?.id) || null;
+    },
     upsert: async () => null
   },
+
   listing: {
     findMany: async (args = {}) => {
+        const { where, include, orderBy } = args;
         let res = [...LISTINGS];
-        if (args.where) {
-            if (args.where.userId) res = res.filter(l => l.userId === args.where.userId);
-            if (args.where.status) res = res.filter(l => l.status === args.where.status);
-            if (args.where.OR) {
-                const term = args.where.OR[0]?.title?.contains?.toLowerCase();
+
+        if (where) {
+            if (where.userId) res = res.filter(l => l.userId === where.userId);
+            if (where.status) res = res.filter(l => l.status === where.status);
+            if (where.OR) {
+                const term = where.OR[0]?.title?.contains?.toLowerCase();
                 if(term) res = res.filter(l => l.title.toLowerCase().includes(term));
             }
         }
-        if (args.orderBy) {
-            if (args.orderBy.price === 'asc') res.sort((a,b) => a.price - b.price);
-            else if (args.orderBy.price === 'desc') res.sort((a,b) => b.price - a.price);
+
+        if (orderBy) {
+            if (orderBy.price === 'asc') res.sort((a,b) => a.price - b.price);
+            else if (orderBy.price === 'desc') res.sort((a,b) => b.price - a.price);
         }
-        // İlişkileri ekle
-        if (args.include) {
+
+        if (include) {
             res = res.map(l => ({
                 ...l,
-                user: args.include.user ? USERS.find(u => u.id === l.userId) : undefined,
-                category: args.include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
+                user: include.user ? USERS.find(u => u.id === l.userId) : undefined,
+                category: include.category ? CATEGORIES.find(c => c.id === l.categoryId) : undefined,
             }));
         }
         return res;
     },
-    findUnique: async ({ where, include }) => {
-        let l = LISTINGS.find(x => x.id === where.id);
+    findUnique: async (args = {}) => {
+        const { where, include } = args;
+        let l = LISTINGS.find(x => x.id === where?.id);
         if (!l) return null;
         if (include) {
             l = {
@@ -134,14 +152,20 @@ const db = {
     },
     count: async () => LISTINGS.length
   },
+
   store: {
     findMany: async () => STORES,
     count: async () => STORES.length
   },
+
   favorite: {
-    findUnique: async ({ where }) => FAVORITES.find(f => f.userId === where.userId_listingId.userId && f.listingId === where.userId_listingId.listingId) || null,
-    findMany: async ({ where, include }) => {
-        let res = FAVORITES.filter(f => f.userId === where.userId);
+    findUnique: async (args = {}) => {
+        const { where } = args;
+        return FAVORITES.find(f => f.userId === where?.userId_listingId?.userId && f.listingId === where?.userId_listingId?.listingId) || null;
+    },
+    findMany: async (args = {}) => {
+        const { where, include } = args;
+        let res = FAVORITES.filter(f => f.userId === where?.userId);
         if (include?.listing) {
             res = res.map(f => ({
                 ...f,
@@ -161,17 +185,25 @@ const db = {
         return { id: where.id };
     }
   },
+
   message: {
     create: async ({ data }) => {
         const msg = { id: `msg-${Date.now()}`, ...data, createdAt: new Date(), isRead: false };
         MESSAGES.push(msg);
         return msg;
     },
-    findMany: async ({ where, include }) => {
+    findMany: async (args = {}) => {
+        const { where, include } = args;
         let msgs = [...MESSAGES];
-        if (where.OR) {
-            msgs = msgs.filter(m => m.senderId === where.OR[0].senderId || m.receiverId === where.OR[0].senderId);
+
+        if (where?.OR) {
+            // Basit OR mantığı: Sender veya Receiver bu ID ise getir
+            const filterId = where.OR[0]?.senderId || where.OR[1]?.receiverId;
+            if (filterId) {
+                 msgs = msgs.filter(m => m.senderId === filterId || m.receiverId === filterId);
+            }
         }
+
         if (include) {
             msgs = msgs.map(m => ({
                 ...m,
