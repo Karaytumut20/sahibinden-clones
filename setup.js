@@ -1,55 +1,57 @@
 const fs = require("fs");
 const path = require("path");
 
-const colors = {
-  red: "\x1b[31m",
-  green: "\x1b[32m",
-  yellow: "\x1b[33m",
-  blue: "\x1b[34m",
-  reset: "\x1b[0m",
+// Yardımcı: Dosya/Klasör Silme
+const removePath = (relativePath) => {
+  const fullPath = path.join(__dirname, relativePath);
+  if (fs.existsSync(fullPath)) {
+    fs.rmSync(fullPath, { recursive: true, force: true });
+    console.log(`❌ Silindi: ${relativePath}`);
+  } else {
+    console.log(`⚠️ Bulunamadı (Zaten temiz): ${relativePath}`);
+  }
+};
+
+// Yardımcı: Dosya Yazma
+const writeFile = (relativePath, content) => {
+  const fullPath = path.join(__dirname, relativePath);
+  // Klasör yoksa oluştur
+  const dir = path.dirname(fullPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  fs.writeFileSync(fullPath, content.trim());
+  console.log(`✅ Güncellendi: ${relativePath}`);
 };
 
 console.log(
-  `${colors.blue}🚀 Sahibinden-Clone 'Saf Frontend' Dönüşüm Operasyonu Başlıyor...${colors.reset}\n`
+  "🚀 Sahibinden Clone - Saf Frontend Dönüşümü ve Onarımı Başlıyor...\n"
 );
 
 // ---------------------------------------------------------
-// 1. ADIM: GEREKSİZ KLASÖR VE DOSYALARI SİL
+// 1. ADIM: BACKEND VE ADMIN DOSYALARINI SİL
 // ---------------------------------------------------------
-console.log(
-  `${colors.yellow}1. Backend ve Admin kalıntıları temizleniyor...${colors.reset}`
-);
-
+console.log("📦 1. Gereksiz Backend/Admin dosyaları temizleniyor...");
 const pathsToDelete = [
-  "prisma", // Prisma veritabanı şemaları
+  "prisma", // Prisma şemaları
   "src/models", // Mongoose modelleri
   "src/app/admin", // Admin sayfaları
   "src/components/admin", // Admin bileşenleri
-  "src/actions/adminActions.ts", // Admin server action'ları
+  "src/actions/adminActions.ts", // Admin aksiyonları
   "src/app/api/debug", // Debug API'leri
-  "src/lib/authz.ts", // Karmaşık yetki kontrolleri
+  "src/lib/authz.ts", // Yetki kontrolleri
 ];
-
-pathsToDelete.forEach((p) => {
-  const fullPath = path.join(__dirname, p);
-  if (fs.existsSync(fullPath)) {
-    fs.rmSync(fullPath, { recursive: true, force: true });
-    console.log(`   ${colors.red}🗑️  Silindi:${colors.reset} ${p}`);
-  }
-});
+pathsToDelete.forEach((p) => removePath(p));
 
 // ---------------------------------------------------------
-// 2. ADIM: PACKAGE.JSON TEMİZLİĞİ (BAĞIMLILIKLARI KALDIR)
+// 2. ADIM: PACKAGE.JSON TEMİZLİĞİ
 // ---------------------------------------------------------
-console.log(
-  `\n${colors.yellow}2. package.json temizleniyor (Gereksiz kütüphaneler kaldırılıyor)...${colors.reset}`
-);
-
+console.log("\n📦 2. package.json temizleniyor...");
 const packageJsonPath = path.join(__dirname, "package.json");
 if (fs.existsSync(packageJsonPath)) {
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 
-  const dependenciesToRemove = [
+  // Silinecek paketler
+  const depsToRemove = [
     "mongoose",
     "prisma",
     "@prisma/client",
@@ -58,89 +60,99 @@ if (fs.existsSync(packageJsonPath)) {
     "mongodb",
   ];
 
-  dependenciesToRemove.forEach((dep) => {
-    if (packageJson.dependencies && packageJson.dependencies[dep]) {
-      delete packageJson.dependencies[dep];
-      console.log(`   ${colors.red}x Kaldırıldı:${colors.reset} ${dep}`);
-    }
-    if (packageJson.devDependencies && packageJson.devDependencies[dep]) {
+  depsToRemove.forEach((dep) => {
+    if (packageJson.dependencies?.[dep]) delete packageJson.dependencies[dep];
+    if (packageJson.devDependencies?.[dep])
       delete packageJson.devDependencies[dep];
-      console.log(`   ${colors.red}x Kaldırıldı (dev):${colors.reset} ${dep}`);
-    }
   });
 
-  // Scripts temizliği (Prisma komutlarını kaldır)
-  if (packageJson.scripts && packageJson.scripts.postinstall) {
+  // Prisma scriptlerini kaldır
+  if (packageJson.scripts) {
     delete packageJson.scripts.postinstall;
+    delete packageJson.scripts["prisma:generate"];
+    delete packageJson.scripts["prisma:push"];
   }
-  if (packageJson.prisma) {
-    delete packageJson.prisma;
-  }
+  delete packageJson.prisma; // Prisma config
 
   fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-  console.log(`   ${colors.green}✔ package.json güncellendi.${colors.reset}`);
+  console.log("✅ package.json veritabanı bağımlılıklarından arındırıldı.");
 }
 
 // ---------------------------------------------------------
-// 3. ADIM: AUTH YAPISINI BASİTLEŞTİR (MOCK AUTH)
+// 3. ADIM: FOOTER.TSX ONARIMI (HATA DÜZELTME)
 // ---------------------------------------------------------
-console.log(
-  `\n${colors.yellow}3. Authentication yapısı 'Mock' moduna alınıyor...${colors.reset}`
-);
+console.log("\n🛠️ 3. Footer.tsx onarılıyor (Admin linki kaldırılıyor)...");
+const footerContent = `
+import Link from "next/link";
+import { Facebook, Instagram, Twitter, Linkedin, Phone } from "lucide-react";
 
-// A. auth.ts dosyasını yeniden yaz
-const authPath = path.join(__dirname, "src", "auth.ts");
-const newAuthContent = `
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { z } from "zod";
-import db from "@/lib/db"; // Mock DB
-import { authConfig } from "./auth.config";
+export default function Footer() {
+  return (
+    <footer className="bg-gray-100 border-t mt-10 text-sm text-gray-600">
+      <div className="container mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+        <div>
+          <h4 className="font-bold text-[#3b5062] mb-4">Kurumsal</h4>
+          <ul className="space-y-2">
+            <li><Link href="#" className="hover:text-blue-600">Hakkımızda</Link></li>
+            <li><Link href="#" className="hover:text-blue-600">İnsan Kaynakları</Link></li>
+            <li><Link href="#" className="hover:text-blue-600">Haberler</Link></li>
+            <li><Link href="#" className="hover:text-blue-600">İletişim</Link></li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="font-bold text-[#3b5062] mb-4">Hizmetlerimiz</h4>
+          <ul className="space-y-2">
+            <li><Link href="#" className="hover:text-blue-600">Doping</Link></li>
+            <li><Link href="#" className="hover:text-blue-600">Güvenli e-Ticaret</Link></li>
+            <li><Link href="#" className="hover:text-blue-600">Reklam Verin</Link></li>
+            <li><Link href="#" className="hover:text-blue-600">Mobil Uygulamalar</Link></li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="font-bold text-[#3b5062] mb-4">Gizlilik</h4>
+          <ul className="space-y-2">
+            <li><Link href="#" className="hover:text-blue-600">Kullanım Koşulları</Link></li>
+            <li><Link href="#" className="hover:text-blue-600">Üyelik Sözleşmesi</Link></li>
+            <li><Link href="#" className="hover:text-blue-600">Gizlilik Politikası</Link></li>
+            <li><Link href="#" className="hover:text-blue-600">Çerez Yönetimi</Link></li>
+          </ul>
+        </div>
+        <div className="col-span-2 lg:col-span-2">
+          <h4 className="font-bold text-[#3b5062] mb-4">Bizi Takip Edin</h4>
+          <div className="flex gap-4 mb-6">
+            <a href="#" className="p-2 bg-white border rounded-full hover:border-blue-600 hover:text-blue-600 transition-colors"><Facebook size={18} /></a>
+            <a href="#" className="p-2 bg-white border rounded-full hover:border-pink-600 hover:text-pink-600 transition-colors"><Instagram size={18} /></a>
+            <a href="#" className="p-2 bg-white border rounded-full hover:border-sky-500 hover:text-sky-500 transition-colors"><Twitter size={18} /></a>
+            <a href="#" className="p-2 bg-white border rounded-full hover:border-blue-700 hover:text-blue-700 transition-colors"><Linkedin size={18} /></a>
+          </div>
+          <div className="bg-white p-4 border rounded-lg shadow-sm inline-block">
+             <div className="flex items-center gap-3">
+                <Phone size={24} className="text-blue-600" />
+                <div>
+                    <div className="text-xs text-gray-500">7/24 Destek Hattı</div>
+                    <div className="font-bold text-lg text-[#3b5062]">0850 222 44 44</div>
+                </div>
+             </div>
+          </div>
+        </div>
+      </div>
 
-// Basit giriş şeması
-const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  ...authConfig,
-  session: { strategy: "jwt" },
-  providers: [
-    Credentials({
-      async authorize(credentials) {
-        const parsed = credentialsSchema.safeParse(credentials);
-        if (!parsed.success) return null;
-
-        const { email, password } = parsed.data;
-
-        // Mock DB'den kullanıcıyı bul (Dizi içinden arar)
-        const user = await db.user.findUnique({ where: { email } });
-        if (!user) return null;
-
-        // Şifre kontrolü (Basit string karşılaştırması)
-        // Not: Gerçek app'te bcrypt kullanılır, burada mock olduğu için direkt bakıyoruz.
-        if (password === user.password || password === 'demo') {
-             return {
-                id: user.id,
-                email: user.email,
-                name: user.name + " " + (user.surname || ""),
-                role: user.role,
-                image: user.image
-             };
-        }
-        return null;
-      },
-    }),
-  ],
-});
+      <div className="bg-[#3b5062] text-white/80 py-4 text-xs">
+        <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-2">
+            <p>© 2025 Sahibinden Clone. Tüm hakları saklıdır.</p>
+        </div>
+      </div>
+    </footer>
+  );
+}
 `;
-fs.writeFileSync(authPath, newAuthContent.trim());
-console.log(`   ${colors.green}✔ src/auth.ts basitleştirildi.${colors.reset}`);
+writeFile("src/components/layout/Footer.tsx", footerContent);
 
-// B. auth.config.ts dosyasını yeniden yaz (Admin kontrollerini kaldır)
-const authConfigPath = path.join(__dirname, "src", "auth.config.ts");
-const newAuthConfigContent = `
+// ---------------------------------------------------------
+// 4. ADIM: AUTH CONFIG (ADMIN KONTROLÜNÜ KALDIR)
+// ---------------------------------------------------------
+console.log("\n🔒 4. Auth Config güncelleniyor...");
+const authConfigContent = `
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
@@ -148,8 +160,6 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-
-      // Sadece profil ve yeni ilan sayfalarını koru
       const isOnProfile = nextUrl.pathname.startsWith("/profile");
       const isOnNewListing = nextUrl.pathname.startsWith("/new-listing");
 
@@ -163,6 +173,7 @@ export const authConfig = {
       if (user) {
         token.id = (user as any).id;
         token.role = (user as any).role;
+        token.name = user.name;
       }
       return token;
     },
@@ -177,66 +188,59 @@ export const authConfig = {
   providers: [],
 } satisfies NextAuthConfig;
 `;
-fs.writeFileSync(authConfigPath, newAuthConfigContent.trim());
-console.log(
-  `   ${colors.green}✔ src/auth.config.ts admin kurallarından arındırıldı.${colors.reset}`
-);
+writeFile("src/auth.config.ts", authConfigContent);
 
 // ---------------------------------------------------------
-// 4. ADIM: MOCK DB KONTROLÜ
+// 5. ADIM: AUTH.TS (MOCK KULLANIMINI GARANTİLE)
 // ---------------------------------------------------------
-console.log(
-  `\n${colors.yellow}4. Mock DB (Veritabanı) doğrulanıyor...${colors.reset}`
-);
-// db.ts dosyasını garantiye alalım (kullanıcı zaten mock kullanıyor ama emin olalım)
-// Eğer lib/db.ts dosyasında "prisma" importu varsa temizleyeceğiz.
-const dbPath = path.join(__dirname, "src", "lib", "db.ts");
-if (fs.existsSync(dbPath)) {
-  let dbContent = fs.readFileSync(dbPath, "utf8");
-  // Eğer dosya Prisma client import ediyorsa, tamamen mock yapı ile değiştireceğiz.
-  // Ancak sizin dosyanız zaten mock array kullanıyor.
-  // Sadece "admin" kullanıcısını silelim ki kafa karışıklığı olmasın.
-  if (dbContent.includes("user-admin")) {
-    dbContent = dbContent.replace(/{ id: 'user-admin'.*?},/s, "");
-    fs.writeFileSync(dbPath, dbContent);
-    console.log(
-      `   ${colors.green}✔ Mock DB içindeki admin kullanıcısı temizlendi.${colors.reset}`
-    );
-  } else {
-    console.log(`   ${colors.green}✔ Mock DB zaten temiz.${colors.reset}`);
-  }
-}
+console.log("\n🔒 5. Auth Logic (auth.ts) güncelleniyor...");
+const authContent = `
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { z } from "zod";
+import db from "@/lib/db";
+import { authConfig } from "./auth.config";
 
-// ---------------------------------------------------------
-// 5. ADIM: FOOTER TEMİZLİĞİ
-// ---------------------------------------------------------
-console.log(
-  `\n${colors.yellow}5. Footer admin linkleri temizleniyor...${colors.reset}`
-);
-const footerPath = path.join(
-  __dirname,
-  "src",
-  "components",
-  "layout",
-  "Footer.tsx"
-);
-if (fs.existsSync(footerPath)) {
-  let content = fs.readFileSync(footerPath, "utf8");
-  // Admin linki varsa kaldır
-  content = content.replace(/<Link href="\/admin".*?>.*?<\/Link>/gs, "");
-  content = content.replace(/{.*Gizli Admin Linki.*}/gs, "");
-  fs.writeFileSync(footerPath, content);
-  console.log(`   ${colors.green}✔ Footer temizlendi.${colors.reset}`);
-}
+const credentialsSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
 
-console.log(`\n${colors.blue}✅ DÖNÜŞÜM TAMAMLANDI!${colors.reset}`);
-console.log(
-  `\nLütfen değişikliklerin geçerli olması için şu adımları izleyin:`
-);
-console.log(
-  `1. Terminalde: ${colors.yellow}npm install${colors.reset} (Yeni package.json'ı yüklemek için)`
-);
-console.log(`2. Terminalde: ${colors.yellow}npm run dev${colors.reset}`);
-console.log(
-  `\nArtık projeniz veritabanı gerektirmeyen, %100 Frontend bir Next.js uygulamasıdır.`
-);
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
+  session: { strategy: "jwt" },
+  providers: [
+    Credentials({
+      async authorize(credentials) {
+        const parsed = credentialsSchema.safeParse(credentials);
+        if (!parsed.success) return null;
+        const { email, password } = parsed.data;
+
+        // Mock DB'den kullanıcı bul
+        const user = await db.user.findUnique({ where: { email } });
+        if (!user) return null;
+
+        // Basit şifre kontrolü (Mock veriler için)
+        if (password === user.password || password === 'demo') {
+             return {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                surname: user.surname,
+                role: user.role,
+             } as any;
+        }
+        return null;
+      },
+    }),
+  ],
+});
+`;
+writeFile("src/auth.ts", authContent);
+
+console.log("\n✨ DÖNÜŞÜM BAŞARIYLA TAMAMLANDI!");
+console.log("--------------------------------------------------");
+console.log("Lütfen şimdi terminalde sırasıyla şu komutları çalıştırın:");
+console.log("1. npm install    (Gereksiz paketlerin silinmesi için)");
+console.log("2. npm run dev    (Projeyi başlatmak için)");
+console.log("--------------------------------------------------");
