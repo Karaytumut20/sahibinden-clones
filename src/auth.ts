@@ -24,7 +24,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user) return null;
 
         // Basit şifre kontrolü (Mock veriler için)
-        if (password === user.password || password === 'demo' || password === 'admin') {
+        if (password === user.password || password === 'demo') {
              // as any ekleyerek TypeScript hatasını çözüyoruz
              return {
                 id: user.id,

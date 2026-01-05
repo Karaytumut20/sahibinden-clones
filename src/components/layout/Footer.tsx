@@ -59,9 +59,7 @@ export default function Footer() {
             <p>© 2025 Sahibinden Clone. Tüm hakları saklıdır.</p>
             
             {/* Gizli Admin Linki */}
-            <Link href="/admin" className="opacity-50 hover:opacity-100 hover:text-white transition-opacity">
-                Yönetici Girişi
-            </Link>
+            
         </div>
       </div>
     </footer>

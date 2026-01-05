@@ -6,7 +6,7 @@ const NOW = new Date();
 // 1. KULLANICILAR
 const USERS = [
   { id: 'user-1', name: 'Demo', surname: 'Kullanıcı', email: 'demo@sahibindenclone.com', password: 'demo', phone: '05554443322', role: 'INDIVIDUAL', createdAt: NOW },
-  { id: 'user-admin', name: 'Süper', surname: 'Admin', email: 'admin@sahibindenclone.com', password: 'admin', phone: '05000000000', role: 'ADMIN', createdAt: NOW },
+  
 ];
 
 // 2. KATEGORİLER
